@@ -7,7 +7,7 @@
 typedef struct node{
     serv_msg * msg;
     node * next;
-}
+}node;
 
 /* msg_list */
 typedef struct msg_list{
@@ -15,7 +15,7 @@ typedef struct msg_list{
     node * first;
     /*Last is a sentinal node at end */
     node * last;
-}
+}msg_list;
 
 
 /* msg list functions */

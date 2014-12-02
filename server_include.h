@@ -8,7 +8,7 @@ typedef struct lts{
 
 /*Server msg struct */
 typedef struct serv_msg{
-    lts time_stamp;
+    lts stamp;
     short is_merge;
     short type;
     int payload_len;
