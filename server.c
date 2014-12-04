@@ -99,25 +99,26 @@ void Read_message()
             return;
         }
 
-        /* Increment LTS */
-        if( ltscomp(msg_rec->stamp, *lamport_time) == 1 )
-        {
-            lamport_time->index = 1 + msg_rec->stamp.index;
-        }
-        else
-        {
-            lamport_time->index = 1 + lamport_time->index;
-        }
-
-        /* Write to file */
-        fprintf(fd, "%s\n", (char *) msg_rec);
-
-        /* Add to list of messages and handle */
-        lamp_struct_insert(messages, msg_rec);
-
         /* If from another server */
+        /* TODO Fix this if statement */
         if(!strcmp(sender, server_group))
         {
+            /* Increment LTS */
+            if( ltscomp(msg_rec->stamp, *lamport_time) == 1 )
+            {
+                lamport_time->index = 1 + msg_rec->stamp.index;
+            }
+            else
+            {
+                lamport_time->index = 1 + lamport_time->index;
+            }
+
+            /* Write to file */
+            fprintf(fd, "%s\n", (char *) msg_rec);
+
+            /* Add to list of messages and handle */
+            lamp_struct_insert(messages, msg_rec);
+
             /* Send message to client */
             sprintf(client_group, "%s-%s", msg_rec->room, User);
             ret = SP_multicast(Mbox, SAFE_MESS, client_group, 2, sizeof(serv_msg), (char *) msg_rec);
@@ -126,8 +127,16 @@ void Read_message()
         else
         {
             /* Send message to other servers */
+            lamport_time++;
             msg_rec->stamp.index = lamport_time + 1;
             msg_rec->stamp.server = proc_index;
+
+            /* Write to file */
+            fprintf(fd, "%s\n", (char *) msg_rec);
+
+            /* Add to list of messages and handle */
+            lamp_struct_insert(messages, msg_rec);
+
             ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_rec);
         }
     }

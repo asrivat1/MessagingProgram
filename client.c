@@ -138,9 +138,6 @@ void Read_message()
     {
         printf("Got a regular message\n");
 
-        /* Add to list of messages and handle */
-        lamp_struct_insert(messages, msg_rec);
-
         /* If about my room */
         if(!strcmp(sender, room_group))
         {
