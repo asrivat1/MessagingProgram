@@ -4,21 +4,6 @@ room * room_init(char * name);
 void room_insert_msg(room * r, lts l, char * user, char * msg);
 void room_insert_like(room * r, lts l, lts like_lts, char* user, short type);
 
-/*Function for comparing lamp port time stamps
- *-1 means first is smaller
- * 0 means equal
- * 1 means first is larger */
-int ltscomp(lts l1, lts l2){
-    if(l1.index > l2.index)
-        return 1;
-    if(l1.index == l2.index) {
-        if(l1.server > l2.server)
-            return 1;
-        if(l1.server == l2.server)
-            return 0;
-    }
-    return -1;
-}
 
 room * room_init(char * name) {
     room * r = malloc(sizeof(room));
