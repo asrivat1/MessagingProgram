@@ -14,7 +14,7 @@ static char Private_group[MAX_GROUP_NAME];
 lamp_struct * messages;
 lts * lamport_time;
 char server_group[] = "Servers";
-char User[] = "#";
+char User[] = "Server#";
 char spread_name[] = "10210";
 int ret;
 FILE *fd;
@@ -32,15 +32,15 @@ int prev_group_status[NUM_SERVERS];
 
 void handle_input(int argc, char *argv[]);
 void Read_message();
-void handle_message(server_msg * msg);
+void handle_message(serv_msg * msg);
 void merge();
 void checkError(char * action);
 
 int main(int argc, char *argv[])
 {
     /* Allocate memory and handle input */
-    msg_send = malloc(sizeof(server_msg));
-    msg_rec = malloc(sizeof(server_msg));
+    msg_send = malloc(sizeof(serv_msg));
+    msg_rec = malloc(sizeof(serv_msg));
 
     messages = lamp_struct_init();
     
@@ -81,7 +81,7 @@ void Read_message()
 
     /* Receive messages */
     ret = SP_receive( Mbox, &service_type, sender, MAX_MEMBERS, &num_groups, target_groups,
-                      &mess_type, &endian_mismatch, sizeof(server_msg), (char *) msg_rec );
+                      &mess_type, &endian_mismatch, sizeof(serv_msg), (char *) msg_rec );
     ret = SP_get_memb_info( in_mess, service_type, &memb_info );
 
     if( Is_regular_mess( service_type ) )
@@ -95,9 +95,9 @@ void Read_message()
         }
 
         /* Increment LTS */
-        if( msg_rec.stamp > lamport_time )
+        if( msg_rec->stamp > lamport_time )
         {
-            lamport_time = 1 + msg_rec.stamp;
+            lamport_time = 1 + msg_rec->stamp;
         }
         else
         {
@@ -110,12 +110,11 @@ void Read_message()
         lamp_struct_insert(messages, msg_rec);
 
         /* Handle message */
-        handleMessage(msg_rec);
+        handle_message(msg_rec);
     }
     else if( Is_reg_memb_mess(service_type))
     {
-        printf("Membership changed: %s\n", memb_info.changed_member);
-
+        /* If message from server_group */
         if (!strcmp(sender, server_group))
         {
             int server_index;
@@ -128,10 +127,11 @@ void Read_message()
             }
             for (i=0 ; i < num_groups; i++)
             {
-                /* You can print out the private group for each server is you want */
+                /* You can print out the private group for each server if you want */
                 printf("%s\n", &target_groups[i][0]);
-                /* You can get the index of the server by reading in an integer starting at the second character (since the first is '#') */
-                server_index = atoi(&target_groups[i][1]);
+                /* You can get the index of the server by reading in
+                 * an integer starting at the second character (since the first is '#') */
+                server_index = atoi(&target_groups[i][7]);
                 group_status[server_index] = 1;
                 if (!prev_group_status[server_index])
                 {
@@ -141,6 +141,7 @@ void Read_message()
             if (merge_case)
             {
                 /* Deal with it */
+                printf("Merging!\n");
             }
         }
     }
@@ -148,7 +149,23 @@ void Read_message()
 
 void merge()
 {
-    printf("Merging!\n");
+}
+
+void handle_message(sever_msg * msg)
+{
+    switch(msg->type)
+    {
+        case 1:
+            break;
+        case -1:
+            break;
+        case 2:
+            break;
+        case 3:
+            break;
+        case -3:
+            break;
+    }
 }
 
 void handle_input(int argc, char *argv[]) {
@@ -159,7 +176,7 @@ void handle_input(int argc, char *argv[]) {
     
     /* Get server ID */
     sscanf(argv[1], "%d", &proc_index);
-    sprintf(User, "%d", proc_index);
+    User[7] = proc_index;
 
     /*Set up file */
     snprintf(User, sizeof(User), "%d.out", proc_index);
