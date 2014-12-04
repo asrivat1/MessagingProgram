@@ -27,8 +27,6 @@ int sent_done = 0;
 double time;
 serv_msg * msg_send;
 serv_msg * msg_rec;
-static struct timeval begin;
-static struct timeval end;
 
 int group_status[NUM_SERVERS];
 int prev_group_status[NUM_SERVERS];
