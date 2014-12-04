@@ -100,7 +100,7 @@ void Read_message()
         }
 
         /* Increment LTS */
-        if( !ltscomp(msg_rec->stamp, *lamport_time) )
+        if( ltscomp(msg_rec->stamp, *lamport_time) == 1 )
         {
             lamport_time->index = 1 + msg_rec->stamp.index;
         }
