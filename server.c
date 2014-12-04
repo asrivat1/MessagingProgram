@@ -76,6 +76,7 @@ void Read_message()
     static char in_mess[MAX_MESSLEN];
     char sender[MAX_GROUP_NAME];
     char target_groups[MAX_MEMBERS][MAX_GROUP_NAME];
+    char client_group[MAX_GROUP_NAME];
     int num_groups;
     int service_type = 0;
     int endian_mismatch;
@@ -109,12 +110,14 @@ void Read_message()
         }
 
         /* Write to file */
+        fprintf(fd, "%s\n", (char *) msg_rec);
 
         /* Add to list of messages and handle */
         lamp_struct_insert(messages, msg_rec);
 
-        /* Handle message */
-        handle_message(msg_rec);
+        /* Send message to client */
+        sprintf(client_group, "%s-%s", msg_rec->room, User);
+        ret = SP_multicast(Mbox, SAFE_MESS, client_group, 2, sizeof(serv_msg), (char *) msg_rec);
     }
     else if( Is_reg_memb_mess(service_type))
     {
@@ -155,24 +158,7 @@ void merge()
 {
 }
 
-void handle_message(serv_msg * msg)
-{
-    switch(msg->type)
-    {
-        case 1:
-            break;
-        case -1:
-            break;
-        case 2:
-            break;
-        case 3:
-            break;
-        case -3:
-            break;
-    }
-}
-
-void handle_input(int argc, char *argv[]) {
+void handle_input(int argc, char * argv[]) {
     if(argc < 1) {
         perror("Mcast: Argument Error");
         exit(1);
