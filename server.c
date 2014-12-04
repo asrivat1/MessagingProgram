@@ -94,7 +94,7 @@ void Read_message()
         printf("Got a regular message\n");
 
         /* Ignore if from self */
-        if(strcmp(sender, User) == 0)
+        if(!strcmp(sender, User))
         {
             return;
         }
@@ -115,9 +115,19 @@ void Read_message()
         /* Add to list of messages and handle */
         lamp_struct_insert(messages, msg_rec);
 
-        /* Send message to client */
-        sprintf(client_group, "%s-%s", msg_rec->room, User);
-        ret = SP_multicast(Mbox, SAFE_MESS, client_group, 2, sizeof(serv_msg), (char *) msg_rec);
+        /* If from another server */
+        if(!strcmp(sender, server_group))
+        {
+            /* Send message to client */
+            sprintf(client_group, "%s-%s", msg_rec->room, User);
+            ret = SP_multicast(Mbox, SAFE_MESS, client_group, 2, sizeof(serv_msg), (char *) msg_rec);
+        }
+        /* Otherwise it's from client */
+        else
+        {
+            /* Send message to other servers */
+            ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_rec);
+        }
     }
     else if( Is_reg_memb_mess(service_type))
     {
