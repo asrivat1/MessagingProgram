@@ -16,8 +16,8 @@ static mailbox Mbox;
 static char Private_group[MAX_GROUP_NAME];
 lamp_struct * messages;
 lts * lamport_time;
-char server_group[] = "Servers";
-char User[] = "Server#";
+char * room_group[];
+char * User;
 char spread_name[] = "10210";
 int ret;
 FILE *fd;
@@ -27,16 +27,15 @@ int sent_done = 0;
 double time;
 serv_msg * msg_send;
 serv_msg * msg_rec;
-static struct timeval begin;
-static struct timeval end;
+struct timeval val;
 
 int group_status[NUM_SERVERS];
 int prev_group_status[NUM_SERVERS];
 
 void handle_input(int argc, char *argv[]);
 void Read_message();
+void read_input();
 void handle_message(serv_msg * msg);
-void merge();
 void checkError(char * action);
 
 int main(int argc, char *argv[])
@@ -47,11 +46,9 @@ int main(int argc, char *argv[])
 
     messages = lamp_struct_init();
     
-    handle_input(argc, argv);
-
-    lamport_time = malloc(sizeof(lts));
-    lamport_time->server = proc_index;
-    lamport_time->index = 1;
+    /* Get client ID */
+    gettimeofday(&val, NULL);
+    sprintf(User, "%ld\n", val.tv_sec);
 
     sp_time test_timeout;
     test_timeout.sec = 5;
@@ -60,15 +57,64 @@ int main(int argc, char *argv[])
     /* Connect and join various groups */
 	ret = SP_connect_timeout( spread_name, User, 0, 1, &Mbox, Private_group, test_timeout );
     checkError("Connect");
-    ret = SP_join(Mbox, server_group);
-    checkError("Join");
 
     /* Set up E - DO NOT MOVE */
 	E_init();
     E_attach_fd( Mbox, READ_FD, Read_message, 0, NULL, HIGH_PRIORITY );
 	E_handle_events();
 
+    read_input();
+
     return 0;
+}
+
+void read_input()
+{
+    char command[80];
+    char server_group[7];
+    char server_room_group[80];
+
+    while(1)
+    {
+        printf("> ");
+        scanf("%79s", command);
+
+        switch(command[0])
+        {
+            /* Login user */
+            case 'u':
+                break;
+            /* Connect to server */
+            case 'c':
+                proc_index = command[2];
+                strprintf(server_group, "Server%d", proc_index);
+                ret = SP_join(Mbox, "Server%d", proc_index);
+                break;
+            /* Connect to room */
+            case 'j':
+                strprintf(room_group, "%s", command + 2);
+                strprintf(, "%s-Server%d", command + 2, proc_index);
+                ret = SP_join(Mbox, room_group);
+            /* Append message */
+            case 'a':
+                strprintf(msg_send->room, "%s", room_group);
+                strprintf(msg_send->payload, "%s", command + 2);
+                ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_rec);
+                break;
+            /* Like a message */
+            case 'l':
+                break;
+            /* Remove a like */
+            case 'r':
+                break;
+            /* View full history */
+            case 'h':
+                break;
+            /* View other servers */
+            case 'v':
+                break;
+        }
+    }
 }
 
 void Read_message()
@@ -82,7 +128,6 @@ void Read_message()
     int endian_mismatch;
     int16 mess_type;
     membership_info memb_info;
-    int i;
 
     /* Receive messages */
     ret = SP_receive( Mbox, &service_type, sender, MAX_MEMBERS, &num_groups, target_groups,
@@ -93,94 +138,15 @@ void Read_message()
     {
         printf("Got a regular message\n");
 
-        /* Ignore if from self */
-        if(!strcmp(sender, User))
-        {
-            return;
-        }
-
-        /* Increment LTS */
-        if( !ltscomp(msg_rec->stamp, *lamport_time) )
-        {
-            lamport_time->index = 1 + msg_rec->stamp.index;
-        }
-        else
-        {
-            lamport_time->index = 1 + lamport_time->index;
-        }
-
-        /* Write to file */
-        fprintf(fd, "%s\n", (char *) msg_rec);
-
         /* Add to list of messages and handle */
         lamp_struct_insert(messages, msg_rec);
 
-        /* If from another server */
-        if(!strcmp(sender, server_group))
+        /* If about my room */
+        if(!strcmp(sender, room_group))
         {
-            /* Send message to client */
-            sprintf(client_group, "%s-%s", msg_rec->room, User);
-            ret = SP_multicast(Mbox, SAFE_MESS, client_group, 2, sizeof(serv_msg), (char *) msg_rec);
-        }
-        /* Otherwise it's from client */
-        else
-        {
-            /* Send message to other servers */
-            ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_rec);
+            /* Handle message */
         }
     }
-    else if( Is_reg_memb_mess(service_type))
-    {
-        /* If message from server_group */
-        if (!strcmp(sender, server_group))
-        {
-            int server_index;
-            int merge_case = 0;
-            printf("Server group membership change.\n");
-            for (i=0; i < NUM_SERVERS; i++)
-            {
-                prev_group_status[i] = group_status[i];
-                group_status[i] = 0;
-            }
-            for (i=0 ; i < num_groups; i++)
-            {
-                /* You can print out the private group for each server if you want */
-                printf("%s\n", &target_groups[i][0]);
-                /* You can get the index of the server by reading in
-                 * an integer starting at the second character (since the first is '#') */
-                server_index = atoi(&target_groups[i][7]);
-                group_status[server_index] = 1;
-                if (!prev_group_status[server_index])
-                {
-                    merge_case = 1;
-                }
-            }
-            if (merge_case)
-            {
-                /* Deal with it */
-                printf("Merging!\n");
-            }
-        }
-    }
-}
-
-void merge()
-{
-}
-
-void handle_input(int argc, char * argv[]) {
-    if(argc < 1) {
-        perror("Mcast: Argument Error");
-        exit(1);
-    }
-    
-    /* Get server ID */
-    sscanf(argv[1], "%d", &proc_index);
-    User[7] = proc_index;
-
-    /*Set up file */
-    snprintf(User, sizeof(User), "%d.out", proc_index);
-    fd = fopen(User, "w");
 }
 
 void checkError(char * action) {
@@ -189,4 +155,3 @@ void checkError(char * action) {
         printf("Error performing %s\n", action);
     }
 }
-
