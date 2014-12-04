@@ -4,57 +4,60 @@
 #include<sp.h>
 #include<sys/time.h>
 
-#define MAX_MEMBERS  100
-#define MAX_MESSLEN  102400
-#define WINDOW 60
+#include "lamp_struct.h"
+#include "server_include.h"
 
-typedef struct pack{
-    int rand;
-    int proc;
-    int index;
-    char payload[1200];
-}pack;
+#define NUM_SERVERS 5
 
 static mailbox Mbox;
 static char Private_group[MAX_GROUP_NAME];
-char group_name[] = "TA";
-char start[] = "Start";
+lamp_struct * messages;
+lts * lamport_time;
+char server_group[] = "Servers";
+char User[] = "#";
+char spread_name[] = "10210";
 int ret;
-int num_members;
-int connected_members = 0;
-int done_members = 0;
 FILE *fd;
-int num_packets;
 int num_sent = 1;
 int proc_index;
 int sent_done = 0;
 double time;
-pack *p_buff;
-pack *t_pack;
+serv_msg * msg_send;
+serv_msg * msg_rec;
 static struct timeval begin;
 static struct timeval end;
 
+int group_status[NUM_SERVERS];
+int prev_group_status[NUM_SERVERS];
 
 void handle_input(int argc, char *argv[]);
 void Read_message();
+void handle_message(server_msg * msg);
+void merge();
 void checkError(char * action);
 
 int main(int argc, char *argv[])
 {
-    p_buff = malloc(sizeof(pack));
-    t_pack = malloc(sizeof(pack));
-    handle_input(argc, argv);
-    char spread_name[] = "10210";
-    char User[] = "user";
-    sp_time test_timeout;
+    /* Allocate memory and handle input */
+    msg_send = malloc(sizeof(server_msg));
+    msg_rec = malloc(sizeof(server_msg));
 
+    messages = lamp_struct_init();
+    
+    handle_input(argc, argv);
+
+    lamport_time = malloc(sizeof(lts));
+    lamport_time.server = proc_index;
+    lamport_time.index = 1;
+
+    sp_time test_timeout;
     test_timeout.sec = 5;
     test_timeout.usec = 0;
 
-    /* Connect and join */
+    /* Connect and join various groups */
 	ret = SP_connect_timeout( spread_name, User, 0, 1, &Mbox, Private_group, test_timeout );
     checkError("Connect");
-    ret = SP_join(Mbox, group_name);
+    ret = SP_join(Mbox, server_group);
     checkError("Join");
 
     /* Set up E - DO NOT MOVE */
@@ -75,131 +78,92 @@ void Read_message()
     int endian_mismatch;
     int16 mess_type;
     membership_info memb_info;
-    int i;
 
     /* Receive messages */
     ret = SP_receive( Mbox, &service_type, sender, MAX_MEMBERS, &num_groups, target_groups,
-                      &mess_type, &endian_mismatch, sizeof(pack), (char *) p_buff );
+                      &mess_type, &endian_mismatch, sizeof(server_msg), (char *) msg_rec );
     ret = SP_get_memb_info( in_mess, service_type, &memb_info );
 
     if( Is_regular_mess( service_type ) )
     {
-        /* If it receives  msg, all members have connected */
-        if(connected_members < num_members)
+        printf("Got a regular message\n");
+
+        /* Ignore if from self */
+        if(strcmp(sender, User) == 0)
         {
-            connected_members = num_members;
-            gettimeofday(&begin, NULL);
-            printf("All Members Connected \n");
-            printf("Begining Sending \n");
-            /* Send initial salvo */
-            for(i = 0; i < WINDOW; i++) {
-                /* Send finishing pack if done sending */
-                if (num_sent > num_packets) {
-                    t_pack->proc = proc_index; 
-                    t_pack->index = -1;
-                    sent_done = 1;
-                    ret = SP_multicast( Mbox, AGREED_MESS, group_name, 2,
-                                        sizeof(pack), (char *) t_pack );
-                    break;
-                }
-                t_pack->rand = rand() % 1000000;
-                t_pack->index = num_sent++;
-                t_pack->proc = proc_index; 
-                ret = SP_multicast( Mbox, AGREED_MESS, group_name, 2,
-                                    sizeof(pack), (char *) t_pack );
-            }
+            return;
         }
 
-        /*Is it a completion message? */
-        if(p_buff->index == -1) {
-            printf("Process %d done sending messages \n", p_buff->proc);
-            if(++done_members == num_members) {
-                gettimeofday(&end, NULL);
-                time = (end.tv_sec + end.tv_usec / 1000000.0
-                        - begin.tv_sec - begin.tv_usec /  1000000.0);
-                printf("Time taken: %.4f \n", time);
-                free(p_buff);
-                free(t_pack);
-                fclose(fd);
-                exit(0);
-            }
+        /* Increment LTS */
+        if( msg_rec.stamp > lamport_time )
+        {
+            lamport_time = 1 + msg_rec.stamp;
         }
-        /* Otherwise it is a regular message*/
-        else {
-            /* Deliver packets */
-            fprintf(fd, "%2d, %8d, %8d\n", p_buff->proc, p_buff->index, p_buff->rand);
-            /* Is it from me? */
-            if(p_buff->proc == proc_index) {
-                /* Send finishing pack if done sending */
-                if(num_sent > num_packets) {
-                    if (!sent_done) {
-                        t_pack->index = -1;
-                        t_pack->proc = proc_index; 
-                        ret = SP_multicast( Mbox, AGREED_MESS, group_name, 2,
-                                            sizeof(pack), (char *) t_pack );
-                        sent_done = 1;
-                    }
-                }
-                /* Otherwise send another pack */
-                else {
-                    t_pack->rand = rand() % 1000000;
-                    t_pack->index = num_sent++;
-                    t_pack->proc = proc_index; 
-                    ret = SP_multicast( Mbox, AGREED_MESS, group_name, 2,
-                                    sizeof(pack), (char *) t_pack );
-                }
-            }
+        else
+        {
+            lamport_time = 1 + lamport_time;
         }
+
+        /* Write to file */
+
+        /* Add to list of messages and handle */
+        lamp_struct_insert(messages, msg_rec);
+
+        /* Handle message */
+        handleMessage(msg_rec);
     }
-    else if( Is_caused_join_mess(service_type))
+    else if( Is_reg_memb_mess(service_type))
     {
-        printf("New member joined: %s\n", memb_info.changed_member);
-        connected_members++;
+        printf("Membership changed: %s\n", memb_info.changed_member);
 
-        /* If all members connected, send initial info */
-        if(connected_members == num_members)
+        if (!strcmp(sender, server_group))
         {
-            printf("All Members Connected \n");
-            printf("Begining Sending \n");
-            gettimeofday(&begin, NULL);
-            /* Send initial salvo */
-            for(i = 0; i < WINDOW; i++) {
-                /* Send finishing pack if done sending */
-                if (num_sent > num_packets) {
-                    t_pack->index = -1;
-                    ret = SP_multicast( Mbox, AGREED_MESS, group_name, 2,
-                                        sizeof(pack), (char *) t_pack );
-                    break;
+            int server_index;
+            int merge_case = 0;
+            printf("Server group membership change.\n");
+            for (i=0; i < NUM_SERVERS; i++)
+            {
+                prev_group_status[i] = group_status[i];
+                group_status[i] = 0;
+            }
+            for (i=0 ; i < num_groups; i++)
+            {
+                /* You can print out the private group for each server is you want */
+                printf("%s\n", &target_groups[i][0]);
+                /* You can get the index of the server by reading in an integer starting at the second character (since the first is '#') */
+                server_index = atoi(&target_groups[i][1]);
+                group_status[server_index] = 1;
+                if (!prev_group_status[server_index])
+                {
+                    merge_case = 1;
                 }
-                t_pack->rand = rand() % 1000000;
-                t_pack->index = num_sent++;
-                t_pack->proc = proc_index; 
-                ret = SP_multicast( Mbox, AGREED_MESS, group_name, 2,
-                                    sizeof(pack), (char *) t_pack );
+            }
+            if (merge_case)
+            {
+                /* Deal with it */
             }
         }
     }
 }
 
+void merge()
+{
+    printf("Merging!\n");
+}
+
 void handle_input(int argc, char *argv[]) {
-    char file_name[8];
-    if(argc < 3) {
-        perror("Mcast:Argument Error");
+    if(argc < 1) {
+        perror("Mcast: Argument Error");
         exit(1);
     }
     
-    sscanf(argv[1], "%d", &num_packets);
-    sscanf(argv[2], "%d", &proc_index);
-    sscanf(argv[3], "%d", &num_members);
-    /*Validate Input */
-    if(num_members > 10 || num_members < 0 || proc_index > num_members ||
-       proc_index < 0 || num_packets < 0) {
-        perror("Mcast: Incorrect Arguments");
-        exit(1);
-    }
+    /* Get server ID */
+    sscanf(argv[1], "%d", &proc_index);
+    sprintf(User, "%d", proc_index);
+
     /*Set up file */
-    snprintf(file_name, sizeof(file_name), "%d.out", proc_index);
-    fd = fopen(file_name, "w");
+    snprintf(User, sizeof(User), "%d.out", proc_index);
+    fd = fopen(User, "w");
 }
 
 void checkError(char * action) {
