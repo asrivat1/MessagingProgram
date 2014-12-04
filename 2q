@@ -80,7 +80,6 @@ void Read_message()
     int endian_mismatch;
     int16 mess_type;
     membership_info memb_info;
-    int i;
 
     /* Receive messages */
     ret = SP_receive( Mbox, &service_type, sender, MAX_MEMBERS, &num_groups, target_groups,

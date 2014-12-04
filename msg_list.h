@@ -6,7 +6,7 @@
 /* Node */
 typedef struct node{
     serv_msg * msg;
-    node * next;
+    struct node * next;
 }node;
 
 /* msg_list */
