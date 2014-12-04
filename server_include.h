@@ -1,5 +1,8 @@
 #ifndef SERVER_INCLUDE
 #define SERVER_INCLUDE
+
+#include <stdlib.h>
+
 /*Lamport time stamp */
 typedef struct lts{
     int server;

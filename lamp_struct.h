@@ -17,7 +17,7 @@ lamp_struct * lamp_struct_init();
 /*Insert to lamp_struct*/
 void lamp_struct_insert(lamp_struct * ls, serv_msg * msg);
 /*Remove lowest*/
-serv_msg lamp_struct_pop(lamp_struct * ls);
+serv_msg * lamp_struct_pop(lamp_struct * ls);
 /*return array of highest lts*/
 int * lamp_array(lamp_struct * ls);
 

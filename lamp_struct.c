@@ -1,8 +1,9 @@
 #include "lamp_struct.h"
 
+
 lamp_struct * lamp_struct_init();
 void lamp_struct_insert(lamp_struct * ls, serv_msg * msg);
-serv_msg lamp_struct_pop(lamp_struct * ls);
+serv_msg * lamp_struct_pop(lamp_struct * ls);
 int * lamp_array(lamp_struct * ls);
 
 lamp_struct * lamp_struct_init(){
@@ -17,7 +18,7 @@ void lamp_struct_insert(lamp_struct * ls, serv_msg * msg){
     list_insert(ls->s_list[msg->stamp.server], msg);
 }
 
-serv_msg lamp_struct_pop(lamp_struct * ls){
+serv_msg * lamp_struct_pop(lamp_struct * ls){
     int i;
     int lowest = list_lowest(ls->s_list[0]);
     int lowest_server = 0;
