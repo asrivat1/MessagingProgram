@@ -23,17 +23,6 @@ typedef struct serv_msg{
  *-1 means first is smaller
  * 0 means equal
  * 1 means first is larger */
-int ltscomp(lts l1, lts l2){
-    if(l1.index > l2.index)
-        return 1;
-    if(l1.index == l2.index) {
-        if(l1.server > l2.server)
-            return 1;
-        if(l1.server == l2.server)
-            return 0;
-    }
-    return -1;
-}
-
+int ltscomp(lts l1, lts l2);
 
 #endif /* SERVER_INCLUDE */

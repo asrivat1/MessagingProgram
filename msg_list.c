@@ -35,7 +35,7 @@ short list_insert(msg_list * l, serv_msg * msg){
             fputs("MALLOC ERROR\n", stderr);
             return 2;
         }
-        velement->msg = index;
+        velement->msg = msg;
         velement->next = l->last->next;
         l->last->next = velement;
         l->last = velement;
@@ -55,14 +55,14 @@ short list_insert(msg_list * l, serv_msg * msg){
         fputs("MALLOC ERROR\n", stderr);
         return 2;
     }
-    velement->msg = index;
+    velement->msg = msg;
     velement->next = pelement->next;
     /*Is this the new last element? */
     if(velement->next->msg == NULL) {
         l->last = velement;
     }
     pelement->next = velement;
-    return;
+    return 0;
 }
 
 
@@ -92,7 +92,7 @@ serv_msg * list_pop(msg_list * l){
 
 
 node * list_get(msg_list * l, int num){
-    node *pelement, *velement;
+    node *pelement;
     pelement = l->first;
     /*loop through looking for element. Stops when at spot to be inserted */
     while(pelement->next->msg != NULL && pelement->next->msg->stamp.index <= num) {

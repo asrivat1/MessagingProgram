@@ -16,7 +16,8 @@ room * room_init(char * name) {
 
 
 void room_insert_msg(room * r, lts l, char * user, char * msg){
-    text * ctext, ntext;
+    text * ctext;
+    text * ntext;
     ctext = r->t_head;
     /*find correct spot */
     while(ctext->next != NULL && ltscomp(l, ctext->l_t_s) > 0)
@@ -38,16 +39,18 @@ void room_insert_msg(room * r, lts l, char * user, char * msg){
 
 
 void room_insert_like(room * r, lts l, lts like_lts, char* user, short type){
-    text * ctext, ntext;
+    text * ctext;
+    text * ntext;
     ctext = r->t_head;
     /*find correct spot */
     while(ctext->next != NULL && ltscomp(l, ctext->l_t_s) > 0)
         ctext = ctext->next;
     if(ltscomp(l, ctext->l_t_s) == 0)
-        like_list_update(ctext->likes, l, like_lts, user, type);
+        like_list_update(ctext->likes, like_lts, user, type);
     /* Placeholder msg */
     else {
         ntext = malloc(sizeof(text));
+        ntext->l_t_s = l;
         ntext->likes = like_list_init();
         ntext->next = ctext->next;
         ctext->next = ntext;

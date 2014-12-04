@@ -7,7 +7,7 @@ typedef struct l_node{
     char * user;
     short type;
     lts l_t_s;
-    l_node * next;
+    struct l_node * next;
 }l_node;
 typedef struct like_list{
     l_node * sentinal;

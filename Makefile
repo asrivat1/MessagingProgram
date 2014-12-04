@@ -9,7 +9,7 @@ all: server
 .c.o:
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $<
 
-server:  $(SP_LIBRARY_DIR)/libspread-core.a server.o lamp_struct.o room.o msg_list.o
+server:  $(SP_LIBRARY_DIR)/libspread-core.a server.o lamp_struct.o room.o msg_list.o like_list.o server_include.o
 	$(LD) -o $@ server.o $(SP_LIBRARY_DIR)/libspread-core.a -ldl -lm -lrt -lnsl $(SP_LIBRARY_DIR)/libspread-util.a lamp_struct.o room.o msg_list.o
 
 clean:
