@@ -6,7 +6,6 @@
 
 #include "lamp_struct.h"
 #include "server_include.h"
-#include "room.h"
 
 #define MAX_MEMBERS  100
 #define MAX_MESSLEN  102400
@@ -47,6 +46,7 @@ int main(int argc, char *argv[])
     
     handle_input(argc, argv);
 
+    /* Set up LTS data structure */
     lamport_time = malloc(sizeof(lts));
     lamport_time->server = proc_index;
     lamport_time->index = 1;
@@ -59,6 +59,8 @@ int main(int argc, char *argv[])
 	ret = SP_connect_timeout( spread_name, User, 0, 1, &Mbox, Private_group, test_timeout );
     checkError("Connect");
     ret = SP_join(Mbox, server_group);
+    checkError("Join");
+    ret = SP_join(Mbox, User);
     checkError("Join");
 
     /* Set up E - DO NOT MOVE */
@@ -124,6 +126,8 @@ void Read_message()
         else
         {
             /* Send message to other servers */
+            msg_rec->stamp.index = lamport_time + 1;
+            msg_rec->stamp.server = proc_index;
             ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_rec);
         }
     }
@@ -177,8 +181,7 @@ void handle_input(int argc, char * argv[]) {
     User[7] = proc_index;
 
     /*Set up file */
-    snprintf(User, sizeof(User), "%d.out", proc_index);
-    fd = fopen(User, "w");
+    fd = fopen(User, "a");
 }
 
 void checkError(char * action) {
