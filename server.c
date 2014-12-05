@@ -91,17 +91,16 @@ void Read_message()
 
     if( Is_regular_mess( service_type ) )
     {
-        printf("Got a regular message\n");
+        printf("Got a regular message sent to: %s\n", target_groups[0]);
 
         /* Ignore if from self */
-        if(!strcmp(sender, User))
+        if(!strcmp(sender, Private_group))
         {
             return;
         }
 
         /* If from another server */
-        /* TODO Fix this if statement */
-        if(!strcmp(sender, server_group))
+        if(!strcmp(target_groups[0], server_group))
         {
             /* Increment LTS */
             if( ltscomp(msg_rec->stamp, *lamport_time) == 1 )

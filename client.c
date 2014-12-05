@@ -16,7 +16,9 @@ static mailbox Mbox;
 static char Private_group[MAX_GROUP_NAME];
 lamp_struct * messages;
 lts * lamport_time;
-char * room_group[];
+char * room[];
+char server_group[7];
+char server_room_group[80];
 char * User;
 char spread_name[] = "10210";
 int ret;
@@ -71,8 +73,6 @@ int main(int argc, char *argv[])
 void read_input()
 {
     char command[80];
-    char server_group[7];
-    char server_room_group[80];
 
     while(1)
     {
@@ -92,12 +92,12 @@ void read_input()
                 break;
             /* Connect to room */
             case 'j':
-                strprintf(room_group, "%s", command + 2);
-                strprintf(, "%s-Server%d", command + 2, proc_index);
-                ret = SP_join(Mbox, room_group);
+                strprintf(room, "%s", command + 2);
+                strprintf(server_room_group, "%s-Server%d", command + 2, proc_index);
+                ret = SP_join(Mbox, server_room_group);
             /* Append message */
             case 'a':
-                strprintf(msg_send->room, "%s", room_group);
+                strprintf(msg_send->room, "%s", room);
                 strprintf(msg_send->payload, "%s", command + 2);
                 ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_rec);
                 break;
@@ -139,7 +139,7 @@ void Read_message()
         printf("Got a regular message\n");
 
         /* If about my room */
-        if(!strcmp(sender, room_group))
+        if(!strcmp(target_groups[0], server_room_group))
         {
             /* Handle message */
         }
