@@ -91,33 +91,33 @@ void Read_message()
 
     if( Is_regular_mess( service_type ) )
     {
-        printf("Got a regular message\n");
+        printf("Got a regular message sent to: %s\n", target_groups[0]);
 
         /* Ignore if from self */
-        if(!strcmp(sender, User))
+        if(!strcmp(sender, Private_group))
         {
             return;
         }
 
-        /* Increment LTS */
-        if( !ltscomp(msg_rec->stamp, *lamport_time) )
-        {
-            lamport_time->index = 1 + msg_rec->stamp.index;
-        }
-        else
-        {
-            lamport_time->index = 1 + lamport_time->index;
-        }
-
-        /* Write to file */
-        fprintf(fd, "%s\n", (char *) msg_rec);
-
-        /* Add to list of messages and handle */
-        lamp_struct_insert(messages, msg_rec);
-
         /* If from another server */
-        if(!strcmp(sender, server_group))
+        if(!strcmp(target_groups[0], server_group))
         {
+            /* Increment LTS */
+            if( ltscomp(msg_rec->stamp, *lamport_time) == 1 )
+            {
+                lamport_time->index = 1 + msg_rec->stamp.index;
+            }
+            else
+            {
+                lamport_time->index = 1 + lamport_time->index;
+            }
+
+            /* Write to file */
+            fprintf(fd, "%s\n", (char *) msg_rec);
+
+            /* Add to list of messages and handle */
+            lamp_struct_insert(messages, msg_rec);
+
             /* Send message to client */
             sprintf(client_group, "%s-%s", msg_rec->room, User);
             ret = SP_multicast(Mbox, SAFE_MESS, client_group, 2, sizeof(serv_msg), (char *) msg_rec);
@@ -126,8 +126,16 @@ void Read_message()
         else
         {
             /* Send message to other servers */
+            lamport_time++;
             msg_rec->stamp.index = lamport_time + 1;
             msg_rec->stamp.server = proc_index;
+
+            /* Write to file */
+            fprintf(fd, "%s\n", (char *) msg_rec);
+
+            /* Add to list of messages and handle */
+            lamp_struct_insert(messages, msg_rec);
+
             ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_rec);
         }
     }
