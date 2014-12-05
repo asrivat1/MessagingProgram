@@ -23,7 +23,6 @@ user * users[5];
 int ret;
 FILE *fd;
 int proc_index;
-serv_msg * msg_send;
 serv_msg * msg_rec;
 short merging = 0;
 
@@ -40,7 +39,6 @@ void clear_server(int server);
 int main(int argc, char *argv[])
 {
     /* Allocate memory and handle input */
-    msg_send = malloc(sizeof(serv_msg));
     msg_rec = malloc(sizeof(serv_msg));
 
     int i;
@@ -208,7 +206,15 @@ void merge()
     merging = 1;
 
     /* Send my LTS for each server */
+    /* TODO make sure send messages have reasonable LTS */
     server_lts = lamp_array(messages);
+    char * ptr = server_lts;
+    for(i = 0; i < sizeof(lts * 5); i++)
+    {
+        msg_rec->payload[i] = ptr[i];
+    }
+    msg_rec->type = 4;
+    ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_rec);
 
     /* Send out my users */
     user * current = users[proc_index]->next;
