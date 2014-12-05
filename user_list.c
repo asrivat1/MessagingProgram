@@ -6,7 +6,7 @@
 void user_join(user * u, char * joined);
 void user_leave(user * u, char * joined);
 
-void user_join(user * u, int server, char * joined)
+void user_join(user * u, char * joined)
 {
     /* If list empty, make the first element */
     if(u->next == 0)
@@ -44,7 +44,7 @@ void user_join(user * u, int server, char * joined)
     current->next->instances = 1;
 }
 
-void user_leave(user * u char * joined)
+void user_leave(user * u, char * joined)
 {
     user * current = u;
 

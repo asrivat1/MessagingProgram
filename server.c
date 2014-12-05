@@ -6,6 +6,7 @@
 
 #include "lamp_struct.h"
 #include "server_include.h"
+#include "user_list.h"
 
 #define MAX_MEMBERS  100
 #define MAX_MESSLEN  102400
