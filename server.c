@@ -107,8 +107,9 @@ void Read_message()
         /* If from another server */
         if(!strcmp(target_groups[0], server_group))
         {
-            /* Increment LTS */
-            if( ltscomp(msg_rec->stamp, *lamport_time) == 1 )
+            /* Increment LTS if it contains one */
+            if( ((msg_rec->type != 4) && (abs(msg_rec->type) != 1))
+                    && ltscomp(msg_rec->stamp, *lamport_time) == 1 )
             {
                 lamport_time->index = 1 + msg_rec->stamp.index;
             }
@@ -132,11 +133,11 @@ void Read_message()
             {
                 /* Join */
                 case 1:
-                    user_join(users[sender[7]], msg_rec->username);
+                    user_join(users[sender[7] - 48], msg_rec->username);
                     break;
                 /* Leave */
                 case -1:
-                    user_leave(users[sender[7]], msg_rec->username);
+                    user_leave(users[sender[7] - 48], msg_rec->username);
                     break;
                 /* Otherwise */
                 default:
@@ -200,16 +201,15 @@ void Read_message()
 void merge()
 {
     int i;
-    int server_lts[5];
+    int * server_lts;
 
     /* Now merging */
     merging = 1;
 
     /* Send my LTS for each server */
-    /* TODO make sure send messages have reasonable LTS */
     server_lts = lamp_array(messages);
     char * ptr = server_lts;
-    for(i = 0; i < sizeof(lts * 5); i++)
+    for(i = 0; i < sizeof(lts) * 5; i++)
     {
         msg_rec->payload[i] = ptr[i];
     }
@@ -221,7 +221,7 @@ void merge()
     while(current != 0)
     {
         msg_rec->type = 1;
-        msg_rec->username = current->username;
+        sprintf(msg_rec->username, "%s", current->username);
         for(i = 0; i < current->instances; i++)
         {
             ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_rec);
@@ -238,7 +238,7 @@ void handle_input(int argc, char * argv[]) {
     
     /* Get server ID */
     sscanf(argv[1], "%d", &proc_index);
-    User[7] = proc_index + 48;
+    User[6] = proc_index + 48;
     printf("I am %s\n", User);
 
     /*Set up file */

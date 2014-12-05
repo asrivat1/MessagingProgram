@@ -21,10 +21,10 @@ int like_list_update(like_list * ll, serv_msg * msg){
     telement = ll->sentinal;
     short change = 0;
     /*Traverse list*/
-    while(telement->next != NULL && strcmp(telement->msg->user, msg->user) < 0)
+    while(telement->next != NULL && strcmp(telement->msg->username, msg->username) < 0)
         telement = telement->next;
     /*If like/unlike for user already exists */
-    if(strcmp(telement->msg->user, msg->user) == 0) {
+    if(strcmp(telement->msg->username, msg->username) == 0) {
         if(ltscomp(telement->msg->stamp, msg->stamp) == -1){
             if(telement->msg->type == LIKE && msg->type == UNLIKE) {
                 ll->num_likes --;
