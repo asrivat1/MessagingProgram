@@ -6,9 +6,7 @@
 #include "like_list.h"
 
 typedef struct text{
-    lts l_t_s;
-    char * msg;
-    char * user;
+    serv_msg * msg;
     like_list * likes;
     struct text * next;
 }text;
@@ -20,11 +18,7 @@ typedef struct room{
 
 /*Make a new room */
 room * room_init(char * name);
-/*Insert a msg */
-void room_insert_msg(room * r, lts l, char * user, char * msg);
-/*Update like. type 3  means like, type -3  means unlike */
-/*l the lamport time stamp of the thing being liked,
- * like_lts is the lamport timestamp of the like*/
-void room_insert_like(room * r, lts l, lts like_lts, char * user, short type);
+/*Update room with specified msg */
+void room_insert(room * r, serv_msg * msg);
 
 #endif /* ROOM */
