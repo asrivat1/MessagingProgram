@@ -164,7 +164,7 @@ void Read_message()
                     for(i = 0; i < 5; i++)
                     {
                         if(max[i] == 0 || ltscomp(payload_lts[i], *max[i]) == 1
-                                || (ltscomp(payload_lts[i], *max[i]) == 0 && sender[7] < max_sender[i]))
+                                || (ltscomp(payload_lts[i], *max[i]) == 0 && (sender[7] - 48) < max_sender[i]))
                         {
                             if(max[i] == 0)
                             {
