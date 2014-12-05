@@ -17,9 +17,9 @@ typedef struct lts{
 
 /*Server msg struct */
 typedef struct serv_msg{
-    lts stamp;
     short type;
-    char user[10];
+    lts stamp;
+    char username[10];
     char room[30];
     char payload[80];
 }serv_msg;

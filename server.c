@@ -22,12 +22,10 @@ char spread_name[] = "10210";
 user * users[5];
 int ret;
 FILE *fd;
-int num_sent = 1;
 int proc_index;
-int sent_done = 0;
-double time;
 serv_msg * msg_send;
 serv_msg * msg_rec;
+short merging = 0;
 
 int group_status[NUM_SERVERS];
 int prev_group_status[NUM_SERVERS];
@@ -130,6 +128,23 @@ void Read_message()
             /* Send message to client */
             sprintf(client_group, "%s-%s", msg_rec->room, User);
             ret = SP_multicast(Mbox, SAFE_MESS, client_group, 2, sizeof(serv_msg), (char *) msg_rec);
+
+            /* Handle join/leave messages */
+            switch(msg_rec->type)
+            {
+                /* Join */
+                case 1:
+                    user_join(users[sender[7]], msg_rec->username);
+                    break;
+                /* Leave */
+                case -1:
+                    user_leave(users[sender[7]], msg_rec->username);
+                    break;
+                /* Otherwise */
+                default:
+                    /* Insert into chatroom */
+                    break;
+            }
         }
         /* Otherwise it's from client */
         else
@@ -186,7 +201,27 @@ void Read_message()
 
 void merge()
 {
+    int i;
+    int server_lts[5];
+
+    /* Now merging */
+    merging = 1;
+
+    /* Send my LTS for each server */
+    server_lts = lamp_array(messages);
+
     /* Send out my users */
+    user * current = users[proc_index]->next;
+    while(current != 0)
+    {
+        msg_rec->type = 1;
+        msg_rec->username = current->username;
+        for(i = 0; i < current->instances; i++)
+        {
+            ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_rec);
+        }
+        current = current->next;
+    }
 }
 
 void handle_input(int argc, char * argv[]) {
@@ -197,7 +232,8 @@ void handle_input(int argc, char * argv[]) {
     
     /* Get server ID */
     sscanf(argv[1], "%d", &proc_index);
-    User[7] = proc_index;
+    User[7] = proc_index + 48;
+    printf("I am %s\n", User);
 
     /*Set up file */
     fd = fopen(User, "a");
