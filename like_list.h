@@ -4,11 +4,10 @@
 #include "server_include.h"
 
 typedef struct l_node{
-    char * user;
-    short type;
-    lts l_t_s;
+    serv_msg * msg;
     struct l_node * next;
 }l_node;
+
 typedef struct like_list{
     l_node * sentinal;
     int num_likes;
@@ -16,7 +15,9 @@ typedef struct like_list{
 
 /* Make a new like_list */
 like_list * like_list_init();
-/* Update like list. Like is 3, unlike is -3 */
-void like_list_update(like_list * ll, lts l_t_s, char * user, short type);
+/* Update like list. 
+ * Returns 1 if changed
+ * Returns 0 if not changed*/
+int like_list_update(like_list * ll, serv_msg * msg);
 
 #endif /*LIKE_LIST*/

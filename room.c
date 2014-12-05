@@ -1,8 +1,7 @@
 #include "room.h"
 
 room * room_init(char * name);
-void room_insert_msg(room * r, lts l, char * user, char * msg);
-void room_insert_like(room * r, lts l, lts like_lts, char* user, short type);
+void room_insert(room * r, serv_msg * msg);
 
 
 room * room_init(char * name) {
@@ -15,47 +14,32 @@ room * room_init(char * name) {
 }
 
 
-void room_insert_msg(room * r, lts l, char * user, char * msg){
+void room_insert_msg(room * r, serv_msg * msg){
     text * ctext;
     text * ntext;
     ctext = r->t_head;
     /*find correct spot */
-    while(ctext->next != NULL && ltscomp(l, ctext->l_t_s) > 0)
+    while(ctext->next != NULL && ltscomp(msg->stamp, ctext->msg->stamp) > 0)
         ctext = ctext->next;
-    /*Is it already there? non causal like  */
-    if(ltscomp(l, ctext->l_t_s) == 0)
-        ctext->l_t_s = l;
-        ctext->user = user;
-        ctext->msg = msg;
+    if(ltscomp(msg->stamp, ctext->msg->stamp) == 0){
+        /*If the msg type is a msg, then a dummy
+          msg is there */
+        if(msg->type == MSG) {
+            free(ctext->msg);
+            ctext->msg = msg;
+        }
+        else 
+            like_list_update(ctext->likes, msg);
         return;
+    }
     ntext = malloc(sizeof(text));
-    ntext->l_t_s = l;
-    ntext->user = user;
-    ntext->msg = msg;
-    ntext->likes = like_list_init();
     ntext->next = ctext->next;
     ctext->next = ntext;
-}
-
-
-void room_insert_like(room * r, lts l, lts like_lts, char* user, short type){
-    text * ctext;
-    text * ntext;
-    ctext = r->t_head;
-    /*find correct spot */
-    while(ctext->next != NULL && ltscomp(l, ctext->l_t_s) > 0)
-        ctext = ctext->next;
-    if(ltscomp(l, ctext->l_t_s) == 0)
-        like_list_update(ctext->likes, like_lts, user, type);
-    /* Placeholder msg */
-    else {
-        ntext = malloc(sizeof(text));
-        ntext->l_t_s = l;
-        ntext->likes = like_list_init();
-        ntext->next = ctext->next;
-        ctext->next = ntext;
-        like_list_update(ctext->likes, like_lts, user, type);
-
-    }
+    ntext->likes = like_list_init();
+    if(msg->type == MSG)
+        ntext->msg = msg;
+    else
+        like_list_update(ntext->likes, msg);
     return;
 }
+
