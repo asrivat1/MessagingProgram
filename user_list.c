@@ -3,45 +3,21 @@
 #include<string.h>
 #include "user_list.h"
 
-user_list * user_list_init();
-void user_join(user_list * ul, int server, char * user);
-void user_leave(user_list * ul, int server, char * user);
-void clear_server(user_list * ul, int server);
+void user_join(user * u, char * joined);
+void user_leave(user * u, char * joined);
 
-user_list * user_list_init()
-{
-    int i;
-    user_list * ul = malloc(sizeof(user_list));
-    for(i = 0; i < 5; i++)
-    {
-        ul->users[i] = malloc(sizeof(user));
-    }
-    return ul;
-}
-
-void clear_server(user_list * ul, int server)
-{
-    user * current = ul->users[server]->next;
-    while(current != 0)
-    {
-        user * tmp = current;
-        current = current->next;
-        free(tmp);
-    }
-}
-
-void user_join(user_list * ul, int server, char * joined)
+void user_join(user * u, int server, char * joined)
 {
     /* If list empty, make the first element */
-    if(ul->users[server]->next == 0)
+    if(u->next == 0)
     {
-        ul->users[server]->next = malloc(sizeof(user));
-        sprintf(ul->users[server]->next->username, "%s", joined);
-        ul->users[server]->next->instances = 1;
+        u->next = malloc(sizeof(user));
+        sprintf(u->next->username, "%s", joined);
+        u->next->instances = 1;
         return;
     }
 
-    user * current = ul->users[server]->next;
+    user * current = u->next;
 
     /* Iterate through list */
     while(current->next != 0)
@@ -68,9 +44,9 @@ void user_join(user_list * ul, int server, char * joined)
     current->next->instances = 1;
 }
 
-void user_leave(user_list * ul, int server, char * joined)
+void user_leave(user * u char * joined)
 {
-    user * current = ul->users[server];
+    user * current = u;
 
     /* Iterate through list */
     while(current->next != 0)

@@ -18,6 +18,7 @@ lts * lamport_time;
 char server_group[] = "Servers";
 char User[] = "Server#";
 char spread_name[] = "10210";
+user * users[5];
 int ret;
 FILE *fd;
 int num_sent = 1;
@@ -35,12 +36,19 @@ void Read_message();
 void handle_message(serv_msg * msg);
 void merge();
 void checkError(char * action);
+void clear_server(int server);
 
 int main(int argc, char *argv[])
 {
     /* Allocate memory and handle input */
     msg_send = malloc(sizeof(serv_msg));
     msg_rec = malloc(sizeof(serv_msg));
+
+    int i;
+    for(i = 0; i < 5; i++)
+    {
+        users[i] = malloc(sizeof(user));
+    }
 
     messages = lamp_struct_init();
     
@@ -200,3 +208,15 @@ void checkError(char * action) {
         printf("Error performing %s\n", action);
     }
 }
+
+void clear_server(int server)
+{
+    user * current = users[server]->next;
+    while(current != 0)
+    {
+        user * tmp = current;
+        current = current->next;
+        free(tmp);
+    }
+}
+

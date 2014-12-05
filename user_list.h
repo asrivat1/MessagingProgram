@@ -9,18 +9,10 @@ typedef struct user
     struct user * next;
 }user;
 
-typedef struct user_list
-{
-    user * users[5];
-}user_list;
-
 /* User joined a server */
-void user_join(user_list * ul, int server, char * user);
+void user_join(user * u, char * user);
 
 /* User leaves a server */
-void user_leave(user_list * ul, int server, char * user);
-
-/* Server leaves group */
-void clear_server(user_list * ul, int server);
+void user_leave(user * u, char * user);
 
 #endif /* USER_LIST */
