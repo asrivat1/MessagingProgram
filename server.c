@@ -126,8 +126,8 @@ void Read_message()
         else
         {
             /* Send message to other servers */
-            lamport_time++;
-            msg_rec->stamp.index = lamport_time + 1;
+            lamport_time->index++;
+            msg_rec->stamp.index = lamport_time->index + 1;
             msg_rec->stamp.server = proc_index;
 
             /* Write to file */
@@ -169,6 +169,7 @@ void Read_message()
             {
                 /* Deal with it */
                 printf("Merging!\n");
+                merge();
             }
         }
     }
@@ -176,6 +177,7 @@ void Read_message()
 
 void merge()
 {
+    /* Send out my users */
 }
 
 void handle_input(int argc, char * argv[]) {
@@ -198,4 +200,3 @@ void checkError(char * action) {
         printf("Error performing %s\n", action);
     }
 }
-

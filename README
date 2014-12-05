@@ -1,0 +1,16 @@
+Akshay Srivatsan
+Trevor Aron
+
+DS_Final
+========
+
+Groups:
+-------
+
+There is a group containing all servers called "Servers".
+
+There is a group containing each server called "Server#" where # is the server ID.
+
+There is a group containing each server and its clients called "Server#-Client".
+
+There is a group containing clients connected to a particular server in a particular group called "RoomS#" where Room is the name of the chat room.

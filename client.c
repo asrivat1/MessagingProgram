@@ -16,7 +16,7 @@ static mailbox Mbox;
 static char Private_group[MAX_GROUP_NAME];
 lamp_struct * messages;
 lts * lamport_time;
-char * chatroom[30];
+char chatroom[30];
 char server_group[7];
 char server_room_group[80];
 char * User;
@@ -73,6 +73,7 @@ int main(int argc, char *argv[])
 void read_input()
 {
     char command[80];
+    char server_client[14];
 
     while(1)
     {
@@ -87,18 +88,19 @@ void read_input()
             /* Connect to server */
             case 'c':
                 proc_index = command[2];
-                strprintf(server_group, "Server%d", proc_index);
-                ret = SP_join(Mbox, "Server%d-Client", proc_index);
+                sprintf(server_group, "Server%d", proc_index);
+                sprintf(server_client, "Server%d-Client", proc_index);
+                ret = SP_join(Mbox, server_client);
                 break;
             /* Connect to room */
             case 'j':
-                strprintf(chatroom, "%s", command + 2);
-                strprintf(server_room_group, "%sS%d", command + 2, proc_index);
+                sprintf(chatroom, "%s", command + 2);
+                sprintf(server_room_group, "%sS%d", command + 2, proc_index);
                 ret = SP_join(Mbox, server_room_group);
             /* Append message */
             case 'a':
-                strprintf(msg_send->room, "%s", chatroom);
-                strprintf(msg_send->payload, "%s", command + 2);
+                sprintf(msg_send->room, "%s", chatroom);
+                sprintf(msg_send->payload, "%s", command + 2);
                 ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_rec);
                 break;
             /* Like a message */
@@ -122,7 +124,6 @@ void Read_message()
     static char in_mess[MAX_MESSLEN];
     char sender[MAX_GROUP_NAME];
     char target_groups[MAX_MEMBERS][MAX_GROUP_NAME];
-    char client_group[MAX_GROUP_NAME];
     int num_groups;
     int service_type = 0;
     int endian_mismatch;
