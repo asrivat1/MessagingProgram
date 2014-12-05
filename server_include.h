@@ -3,6 +3,12 @@
 
 #include <stdlib.h>
 
+#define JOIN 1
+#define MSG 2
+#define LIKE 3
+#define UNLIKE -3
+#define LEAVE -1
+
 /*Lamport time stamp */
 typedef struct lts{
     int server;
