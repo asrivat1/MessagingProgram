@@ -261,6 +261,15 @@ void merge_messages()
         if(max_sender[i] == proc_index)
         {
             /* Send everything from min to max */
+            for(j = 0; j < messages->s_list[i]->size; i++)
+            {
+                if(ltscomp(messages->s_list[i]->arr[j]->stamp, *min[i]) == 0
+                        || ltscomp(messages->s_list[i]->arr[j]->stamp, *min[i]) == 1)
+                {
+                    msg_rec = messages->s_list[i]->arr[j];
+                    ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_rec);
+                }
+            }
         }
     }
 }
