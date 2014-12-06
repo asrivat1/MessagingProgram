@@ -13,14 +13,30 @@ void del_room(room * r);
 
 room * room_init(char * name) {
     room * r = malloc(sizeof(room));
+    if(!r) {
+        perror("MALLOC ERROR\n");
+        exit(1);
+    }
     text * t_head = malloc(sizeof(text));
+    if(!t_head) {
+        perror("MALLOC ERROR\n");
+        exit(1);
+    }
     t_head->next = NULL;
-    r->name = malloc(strnlen(name, 30));
+    r->name = malloc(sizeof(char) * 30);
+    if(!r->name) {
+        perror("MALLOC ERROR\n");
+        exit(1);
+    }
     strncpy(r->name, name, 30);
     r->t_head = t_head;
     r->recent = t_head;
     r->size = 0;
     r->users = malloc(sizeof(user));
+    if(!r->users) {
+        perror("MALLOC ERROR\n");
+        exit(1);
+    }
     r->users->next = NULL;
     r->users->instances = 0;
     return r; 
@@ -63,6 +79,10 @@ int room_insert_msg(room * r, serv_msg * msg){
     /*make new node */
     else {
         ntext = malloc(sizeof(text));
+        if(!ntext) {
+            perror("MALLOC ERROR\n");
+            exit(1);
+        }
         ntext->next = ctext->next;
         ctext->next = ntext;
         ntext->likes = like_list_init();
@@ -103,12 +123,20 @@ change_mem room_insert_like(room * r, serv_msg * msg){
     /* like has arrived before msg, make dummy msg */
     else {
         ntext = malloc(sizeof(text));
+        if(!ntext) {
+            perror("MALLOC ERROR\n");
+            exit(1);
+        }
         ntext->next = ctext->next;
         ctext->next = ntext;
         ntext->likes = like_list_init();
         change = like_list_update(ntext->likes, msg);
         change.change = 0;
         temp = malloc(sizeof(serv_msg));
+        if(!temp) {
+            perror("MALLOC ERROR\n");
+            exit(1);
+        }
         temp->stamp = *liked_stamp;
         temp->type = DUMMY;
         ntext->msg = temp;
@@ -148,24 +176,17 @@ void del_room(room * r) {
     text * temp;
     user * a, * b;
     int i = 0;
-    printf("Killing Texts \n");
     while(curr != 0) {
-        printf("%d\n", ++i);
-        printf("Free msg\n");
         if(curr->msg != 0) {
-            printf("MSG: %s\n", curr->msg->payload);
             free(curr->msg);
         }
-        printf("Free Likes\n");
         if(curr->likes != 0)
             del_like_list(curr->likes);
-        printf("Free text \n");
         temp = curr;
         curr = curr->next;
         free(temp);
 
     }
-    printf("Killing Attendees\n");
     /* Free attendees */
     a = r->users;
     while(a != NULL) {
