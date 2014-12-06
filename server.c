@@ -102,7 +102,9 @@ void Read_message()
     /* Receive messages */
     ret = SP_receive( Mbox, &service_type, sender, MAX_MEMBERS, &num_groups, target_groups,
                       &mess_type, &endian_mismatch, sizeof(serv_msg), (char *) msg_buf );
+    checkError("Receive");
     ret = SP_get_memb_info( in_mess, service_type, &memb_info );
+    checkError("Get member info");
 
     if( Is_regular_mess( service_type ) )
     {
@@ -144,6 +146,7 @@ void Read_message()
                 /* Send message to client */
                 sprintf(client_group, "%s-%s", msg_rec->room, User);
                 ret = SP_multicast(Mbox, SAFE_MESS, client_group, 2, sizeof(serv_msg), (char *) msg_rec);
+                checkError("Multicast");
             }
 
             /* Handle join/leave messages */
@@ -219,6 +222,7 @@ void Read_message()
             lamp_struct_insert(messages, msg_rec);
 
             ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_buf);
+            checkError("Multicast");
         }
     }
     else if( Is_reg_memb_mess(service_type))
@@ -277,6 +281,7 @@ void merge_messages()
                 {
                     msg_send = messages->s_list[i]->arr[j];
                     ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_send);
+                    checkError("Multicast");
                 }
             }
         }
@@ -308,6 +313,7 @@ void merge()
     }
     msg_send->type = 4;
     ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_send);
+    checkError("Multicast");
 
     /* Send out my users */
     user * current = users[proc_index]->next;
@@ -318,6 +324,7 @@ void merge()
         for(i = 0; i < current->instances; i++)
         {
             ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_send);
+            checkError("Multicast");
         }
         current = current->next;
     }
