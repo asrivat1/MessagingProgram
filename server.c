@@ -82,19 +82,7 @@ int main(int argc, char *argv[])
 
     return 0;
 }
-/* FIXME: fix memory issue: must allocate space for msg_rec before receiving a msg.
- * This is because msgs will be stored in memory, and overwriting the msg destroys
- * everything.
- * POSSIBLE FIX: instead of allocating space each time, if the msg is actually a msg
- * that will be stored somewhere (like, unlike, txt msg) then allocate new space
- *
- * FIXME: make sure that the only msgs being handled (written to file, put in LTS data structure,
- * and do room operations on) are new msgs (greater than the LTS of highest val
- * in lamp data structure) 
- *
- * FIXME: only pass msgs along to client if they are relavent-- by this I mean that
- * they cause a "change" in the most recent msgs in a room
- * */
+
 void Read_message()
 {
     static char in_mess[MAX_MESSLEN];
@@ -109,10 +97,11 @@ void Read_message()
     int i;
     lts payload_lts[5];
     char * ptr;
+    serv_msg * msg_buf = malloc(sizeof(serv_msg));
 
     /* Receive messages */
     ret = SP_receive( Mbox, &service_type, sender, MAX_MEMBERS, &num_groups, target_groups,
-                      &mess_type, &endian_mismatch, sizeof(serv_msg), (char *) msg_rec );
+                      &mess_type, &endian_mismatch, sizeof(serv_msg), (char *) msg_buf );
     ret = SP_get_memb_info( in_mess, service_type, &memb_info );
 
     if( Is_regular_mess( service_type ) )
@@ -128,9 +117,14 @@ void Read_message()
         /* If from another server */
         if(!strcmp(target_groups[0], server_group))
         {
-            /* If it's not a server only message */
-            if((msg_rec->type != 4) && (abs(msg_rec->type) != 1))
+            /* If it's not a server only message and we don't already have it */
+            if((msg_buf->type != 4) && (abs(msg_buf->type) != 1)
+                    && ltscomp(msg_buf->stamp, messages->s_list[sender[7] - 48]->arr[messages->s_list[sender[7] - 48]->size - 1]->stamp) == 1 )
             {
+                /* Allocate new memory for storage */
+                msg_rec = malloc(sizeof(serv_msg));
+                memcpy(msg_rec, msg_buf, sizeof(serv_msg));
+
                 /* Increment LTS */
                 if( ltscomp(msg_rec->stamp, *lamport_time) == 1 )
                 {
@@ -153,22 +147,15 @@ void Read_message()
             }
 
             /* Handle join/leave messages */
-            switch(msg_rec->type)
+            switch(msg_buf->type)
             {
-                /*FIXME: Issue is that we do not store join and leave messages.
-                 *       If we are keeping them in their own data structure, we
-                 *       need to make sure the string is allocated so it doesn't
-                 *       get corrupted.
-                 *FIX IDEA:
-                 *       Allocate new string in user list code when needed to store.
-                 *       Abstract memory to user list. */
                 /* Join */
                 case 1:
-                    user_join(users[sender[7] - 48], msg_rec->username);
+                    user_join(users[sender[7] - 48], msg_buf->username);
                     break;
                 /* Leave */
                 case -1:
-                    user_leave(users[sender[7] - 48], msg_rec->username);
+                    user_leave(users[sender[7] - 48], msg_buf->username);
                     break;
                 /* Merge */
                 case 4:
@@ -177,10 +164,8 @@ void Read_message()
                     ptr = payload_lts;
                     for(i = 0; i < sizeof(lts) * 5; i++)
                     {
-                        ptr[i] = msg_rec->payload[i];
+                        ptr[i] = msg_buf->payload[i];
                     }
-                    /* FIXME: This should only be run once the server
-                     * has all information. It makes no sense to do it everytime. */
                     /* See if this is has a max or min */
                     for(i = 0; i < 5; i++)
                     {
@@ -222,16 +207,18 @@ void Read_message()
         {
             /* Send message to other servers */
             lamport_time->index++;
-            msg_rec->stamp.index = lamport_time->index + 1;
-            msg_rec->stamp.server = proc_index;
+            msg_buf->stamp.index = lamport_time->index + 1;
+            msg_buf->stamp.server = proc_index;
 
             /* Write to file */
-            fprintf(fd, "%s\n", (char *) msg_rec);
+            fprintf(fd, "%s\n", (char *) msg_buf);
 
             /* Add to list of messages and handle */
+            msg_rec = malloc(sizeof(serv_msg));
+            memcpy(msg_rec, msg_buf, sizeof(serv_msg));
             lamp_struct_insert(messages, msg_rec);
 
-            ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_rec);
+            ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_buf);
         }
     }
     else if( Is_reg_memb_mess(service_type))
@@ -275,6 +262,7 @@ void merge_messages()
 {
     int i;
     int j;
+    serv_msg * msg_send;
 
     for(i = 0; i < 5; i++)
     {
@@ -287,8 +275,8 @@ void merge_messages()
                 if(ltscomp(messages->s_list[i]->arr[j]->stamp, *min[i]) == 0
                         || ltscomp(messages->s_list[i]->arr[j]->stamp, *min[i]) == 1)
                 {
-                    msg_rec = messages->s_list[i]->arr[j];
-                    ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_rec);
+                    msg_send = messages->s_list[i]->arr[j];
+                    ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_send);
                 }
             }
         }
@@ -299,6 +287,7 @@ void merge()
 {
     int i;
     int * server_lts;
+    serv_msg * msg_send;
 
     /* Clear previous max/min */
     for(i = 0; i < 5; i++)
@@ -313,20 +302,20 @@ void merge()
     char * ptr = server_lts;
     for(i = 0; i < sizeof(lts) * 5; i++)
     {
-        msg_rec->payload[i] = ptr[i];
+        msg_send->payload[i] = ptr[i];
     }
-    msg_rec->type = 4;
-    ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_rec);
+    msg_send->type = 4;
+    ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_send);
 
     /* Send out my users */
     user * current = users[proc_index]->next;
     while(current != 0)
     {
-        msg_rec->type = 1;
-        sprintf(msg_rec->username, "%s", current->username);
+        msg_send->type = 1;
+        sprintf(msg_send->username, "%s", current->username);
         for(i = 0; i < current->instances; i++)
         {
-            ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_rec);
+            ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_send);
         }
         current = current->next;
     }
