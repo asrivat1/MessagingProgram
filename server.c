@@ -128,6 +128,7 @@ void Read_message()
             if((msg_buf->type != 4) && (abs(msg_buf->type) != 1)
                     && ltscomp(msg_buf->stamp, lamp_array(messages)[atoi(&sender[7])]) == 1)
             {
+                printf("Handling a like or text message\n");
                 /* Allocate new memory for storage */
                 msg_rec = malloc(sizeof(serv_msg));
                 memcpy(msg_rec, msg_buf, sizeof(serv_msg));
@@ -143,7 +144,9 @@ void Read_message()
                 }
 
                 /* Write to file */
-                fprintf(fd, "%s\n", (char *) msg_rec);
+                fwrite(msg_rec, sizeof(serv_msg), 1, fd);
+                fclose(fd);
+                fd = fopen(User, "a");
 
                 /* Add to list of messages and handle */
                 lamp_struct_insert(messages, msg_rec);
@@ -220,7 +223,9 @@ void Read_message()
             msg_buf->stamp.server = proc_index;
 
             /* Write to file */
-            fprintf(fd, "%s\n", (char *) msg_buf);
+            fwrite(msg_buf, sizeof(serv_msg), 1, fd);
+            fclose(fd);
+            fd = fopen(User, "a");
 
             /* Add to list of messages and handle */
             msg_rec = malloc(sizeof(serv_msg));
@@ -303,7 +308,7 @@ void merge_messages()
 void merge()
 {
     int i;
-    int * server_lts;
+    lts * server_lts;
     serv_msg * msg_send = malloc(sizeof(msg_send));
 
     /* Clear previous max/min */
