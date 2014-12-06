@@ -23,6 +23,7 @@ void room_list_update(room_node * r, serv_msg * msg){
     }
     /*Room needs to be made */
     if(curr->next == NULL || strcmp(curr->next->r->name, msg->room) != 0) {
+        printf("Room Created\n");
         temp = malloc(sizeof(room_node));
         temp->r = room_init(msg->room);
         temp->next = curr->next;
@@ -34,8 +35,8 @@ void room_list_update(room_node * r, serv_msg * msg){
     /*Add like to room*/
     else if(msg->type == LIKE || msg->type == UNLIKE)
         room_insert_like(curr->next->r, msg);
-    /*TODO: Add user to room */
-    else
+    /*Add user to room */
+    else if(msg->type == JOIN || msg->type == LEAVE)
         room_update_user(curr->next->r, msg);
 }
 
