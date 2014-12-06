@@ -1,4 +1,5 @@
 #include "room.h"
+#include "user_list.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -6,6 +7,7 @@ room * room_init(char * name);
 int room_insert_msg(room * r, serv_msg * msg);
 change_mem room_insert_like(room *r, serv_msg * msg);
 void print_room(room * r, int recent);
+void room_update_user(room * r, serv_msg * msg);
 void del_room(room * r);
 
 
@@ -18,6 +20,9 @@ room * room_init(char * name) {
     r->t_head = t_head;
     r->recent = t_head;
     r->size = 0;
+    r->users = malloc(sizeof(user));
+    r->users->next = NULL;
+    r->users->instances = 0;
     return r; 
 }
 
@@ -113,7 +118,11 @@ void print_room(room * r, int recent) {
     text * temp = r->t_head->next;
     if(recent)
         temp = r->recent->next;
-    /*TODO: Print attendees */
+    printf("Attendees: ");
+    user * u = r->users->next; 
+    while(u)
+        printf("%s, ", u->username);
+    printf("\n");
     printf("ROOM: %s \n", r->name);
     while(temp) {
         if(temp->msg->type == DUMMY)
@@ -124,20 +133,44 @@ void print_room(room * r, int recent) {
     }
 }
 
+void room_update_user(room * r, serv_msg * msg) {
+    if(msg->type == JOIN)
+        user_join(r->users, msg);
+    else
+        user_leave(r->users, msg);
+}
+
 void del_room(room * r) {
     text * curr = r->t_head;
     text * temp;
-    while(curr) {
+    user * a, * b;
+    int i = 0;
+    printf("Killing Texts \n");
+    while(curr != 0) {
+        printf("%d\n", ++i);
+        printf("Free msg\n");
+        if(curr->msg != 0) {
+            printf("MSG: %s\n", curr->msg->payload);
+            free(curr->msg);
+        }
+        printf("Free Likes\n");
+        if(curr->likes != 0)
+            del_like_list(curr->likes);
+        printf("Free text \n");
         temp = curr;
         curr = curr->next;
-        if(temp->msg)
-            free(temp->msg);
-        if(temp->likes) {
-            del_like_list(temp->likes);
-        }
         free(temp);
+
     }
-    /*TODO: Free attendees */
-    free(r->name);
+    printf("Killing Attendees\n");
+    /* Free attendees */
+    a = r->users;
+    while(a != NULL) {
+        b = a;
+        a = b->next;
+        free(b);
+    }
+    if(r->name != NULL)
+        free(r->name);
     free(r);
 }

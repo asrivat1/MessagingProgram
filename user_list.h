@@ -1,5 +1,6 @@
 #ifndef USER_LIST
 #define USER_LIST
+#include "server_include.h"
 
 typedef struct user
 {
@@ -10,9 +11,9 @@ typedef struct user
 }user;
 
 /* User joined a server */
-void user_join(user * u, char * user);
+void user_join(user * u, serv_msg * user);
 
 /* User leaves a server */
-void user_leave(user * u, char * user);
+void user_leave(user * u, serv_msg * user);
 
 #endif /* USER_LIST */

@@ -4,6 +4,7 @@
 
 #include "server_include.h"
 #include "like_list.h"
+#include "user_list.h"
 
 typedef struct text{
     serv_msg * msg;
@@ -11,9 +12,9 @@ typedef struct text{
     struct text * next;
 }text;
 
-/*TODO: add attendees */    
 typedef struct room{
     char * name;
+    user * users;
     text * t_head;
     text * recent;
     int size;
@@ -27,6 +28,8 @@ int room_insert_msg(room * r, serv_msg * msg);
 change_mem room_insert_like(room * r, serv_msg * msg);
 /*Print room */
 void print_room(room * r, int recent);
+/*Add user */
+void room_update_user(room * r, serv_msg * msg);
 /*Delete room*/
 void del_room(room * r);
 #endif /* ROOM */
