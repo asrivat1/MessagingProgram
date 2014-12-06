@@ -17,11 +17,12 @@ void lamp_struct_insert(lamp_struct * ls, serv_msg * msg){
     stack_push(ls->s_list[msg->stamp.server], msg);
 }
 
-int * lamp_array(lamp_struct * ls){
-    int * arr = malloc(sizeof(int) * 5);
+lts * lamp_array(lamp_struct * ls){
+    lts * arr = malloc(sizeof(lts) * 5);
     int i;
     for(i = 0; i < 5; i++) {
-        arr[i] = stack_look(ls->s_list[i]);
+        arr[i].index = stack_look(ls->s_list[i]);
+        arr[i].server = i;
     }
     return arr;
 }
