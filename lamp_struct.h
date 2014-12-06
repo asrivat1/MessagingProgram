@@ -17,6 +17,6 @@ lamp_struct * lamp_struct_init();
 /*Insert to lamp_struct*/
 void lamp_struct_insert(lamp_struct * ls, serv_msg * msg);
 /*return array of highest lts*/
-int * lamp_array(lamp_struct * ls);
+lts * lamp_array(lamp_struct * ls);
 
 #endif /* LAMP_STRUCT */

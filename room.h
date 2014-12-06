@@ -10,7 +10,8 @@ typedef struct text{
     like_list * likes;
     struct text * next;
 }text;
-    
+
+/*TODO: add attendees */    
 typedef struct room{
     char * name;
     text * t_head;
@@ -24,4 +25,8 @@ room * room_init(char * name);
 int room_insert_msg(room * r, serv_msg * msg);
 /*Update room with specified like */
 change_mem room_insert_like(room * r, serv_msg * msg);
+/*Print room */
+void print_room(room * r, int recent);
+/*Delete room*/
+void del_room(room * r);
 #endif /* ROOM */

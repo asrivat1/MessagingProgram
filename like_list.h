@@ -29,5 +29,7 @@ like_list * like_list_init();
  * Any mem that needs to be cleaned up by
  * client is in change_mem.msg*/
 change_mem like_list_update(like_list * ll, serv_msg * msg);
+/*Delete like list */
+void del_like_list(like_list *ll);
 
 #endif /*LIKE_LIST*/

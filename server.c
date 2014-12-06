@@ -7,6 +7,7 @@
 #include "lamp_struct.h"
 #include "server_include.h"
 #include "user_list.h"
+#include "room_list.h"
 
 #define MAX_MEMBERS  100
 #define MAX_MESSLEN  102400
@@ -15,6 +16,7 @@
 static mailbox Mbox;
 static char Private_group[MAX_GROUP_NAME];
 lamp_struct * messages;
+room_node * room_list;
 lts * lamport_time;
 char server_group[] = "Servers";
 char User[] = "Server#";
@@ -58,6 +60,8 @@ int main(int argc, char *argv[])
     messages = lamp_struct_init();
     
     handle_input(argc, argv);
+
+    room_list = room_list_init();
 
     /* Set up LTS data structure */
     lamport_time = malloc(sizeof(lts));
@@ -362,6 +366,27 @@ void clear_server(int server)
         current = current->next;
         free(tmp);
     }
+}
+/* send room to client.
+ * 1 for history means start at begining
+ *TODO: Get to actually send to specified client.
+        This will probably require additional parameters
+        Send attendee info */
+void send_room(char * rm, int history) {
+    room * r = room_list_get_room(room_list, rm);
+    text * t = r->t_head->next;
+    if(! history)
+        t = r->recent->next;
+    l_node * l;
+    while(t) {
+        /*SEND t->msg */
+        l = t->likes->sentinal->next;
+        while(l) {
+            /*SEND l->msg */
+            l = l->next;
+        }
+        t = t->next;
+    } 
 }
 
 void sendFakeMsg()
