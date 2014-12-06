@@ -8,6 +8,7 @@
 #define LIKE 3
 #define UNLIKE -3
 #define LEAVE -1
+#define DUMMY 0
 
 /*Lamport time stamp */
 typedef struct lts{
@@ -23,7 +24,6 @@ typedef struct serv_msg{
     char room[30];
     char payload[80];
 }serv_msg;
-
 
 /*Function for comparing lamp port time stamps
  *-1 means first is smaller
