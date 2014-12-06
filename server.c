@@ -126,7 +126,7 @@ void Read_message()
         {
             /* If it's not a server only message and we don't already have it */
             if((msg_buf->type != 4) && (abs(msg_buf->type) != 1)
-                    && (messages->s_list[atoi(&sender[7])]->size == 0 || ltscomp(msg_buf->stamp, messages->s_list[atoi(&sender[7])]->arr[messages->s_list[atoi(&sender[7])]->size - 1]->stamp) == 1 ))
+                    && ltscomp(msg_buf->stamp, lamp_array(messages)[atoi(&sender[7])]) == 1)
             {
                 /* Allocate new memory for storage */
                 msg_rec = malloc(sizeof(serv_msg));
