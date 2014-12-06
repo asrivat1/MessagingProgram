@@ -1,3 +1,5 @@
+#include<stdio.h>
+
 #include "room_list.h"
 #include "string.h"
 
