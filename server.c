@@ -28,7 +28,7 @@ lts * max[NUM_SERVERS];
 int max_sender[NUM_SERVERS];
 lts * min[NUM_SERVERS];
 int num_merged = 0;
-int num_lts = 0;
+int num_lts = 1;
 
 int group_status[NUM_SERVERS];
 int prev_group_status[NUM_SERVERS];
@@ -40,6 +40,7 @@ void merge_messages();
 void merge();
 void checkError(char * action);
 void clear_server(int server);
+void sendFakeMsg();
 
 int main(int argc, char *argv[])
 {
@@ -104,7 +105,6 @@ void Read_message()
                       &mess_type, &endian_mismatch, sizeof(serv_msg), (char *) msg_buf );
     checkError("Receive");
     ret = SP_get_memb_info( in_mess, service_type, &memb_info );
-    checkError("Get member info");
 
     if( Is_regular_mess( service_type ) )
     {
@@ -113,6 +113,7 @@ void Read_message()
         /* Ignore if from self */
         if(!strcmp(sender, Private_group))
         {
+            printf("It was from myself\n");
             return;
         }
 
@@ -121,7 +122,7 @@ void Read_message()
         {
             /* If it's not a server only message and we don't already have it */
             if((msg_buf->type != 4) && (abs(msg_buf->type) != 1)
-                    && ltscomp(msg_buf->stamp, messages->s_list[atoi(&sender[7])]->arr[messages->s_list[atoi(&sender[7])]->size - 1]->stamp) == 1 )
+                    && (messages->s_list[atoi(&sender[7])]->size == 0 || ltscomp(msg_buf->stamp, messages->s_list[atoi(&sender[7])]->arr[messages->s_list[atoi(&sender[7])]->size - 1]->stamp) == 1 ))
             {
                 /* Allocate new memory for storage */
                 msg_rec = malloc(sizeof(serv_msg));
@@ -196,6 +197,7 @@ void Read_message()
                     /* If I have info from all servers, send messages */
                     if(num_merged == num_lts)
                     {
+                        num_lts = 1;
                         merge_messages();
                     }
                     break;
@@ -268,6 +270,8 @@ void merge_messages()
     int j;
     serv_msg * msg_send = malloc(sizeof(msg_send));
 
+    printf("\nMerging messages\n");
+
     for(i = 0; i < NUM_SERVERS; i++)
     {
         /* If I have the max LTS for that server */
@@ -286,6 +290,8 @@ void merge_messages()
             }
         }
     }
+    
+    sendFakeMsg();
 
     free(msg_send);
 }
@@ -347,13 +353,6 @@ void handle_input(int argc, char * argv[]) {
     fd = fopen(User, "a");
 }
 
-void checkError(char * action) {
-    if (ret < 0)
-    {
-        printf("Error performing %s\n", action);
-    }
-}
-
 void clear_server(int server)
 {
     user * current = users[server]->next;
@@ -362,6 +361,27 @@ void clear_server(int server)
         user * tmp = current;
         current = current->next;
         free(tmp);
+    }
+}
+
+void sendFakeMsg()
+{
+    serv_msg * send_msg = malloc(sizeof(serv_msg));
+    send_msg->type = 2;
+    lamport_time->index++;
+    send_msg->stamp.index = lamport_time->index;
+    send_msg->stamp.server = proc_index;
+    sprintf(send_msg->username, "FakeUser");
+    sprintf(send_msg->room, "FakeRoom");
+    sprintf(send_msg->payload, "Message %d from Server%d", lamport_time->index, proc_index);
+    ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) send_msg);
+    checkError("Multicast");
+}
+
+void checkError(char * action) {
+    if (ret < 0)
+    {
+        printf("Error performing %s\n", action);
     }
 }
 
