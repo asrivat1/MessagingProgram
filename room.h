@@ -14,11 +14,14 @@ typedef struct text{
 typedef struct room{
     char * name;
     text * t_head;
+    text * recent;
+    int size;
 }room;
 
 /*Make a new room */
 room * room_init(char * name);
 /*Update room with specified msg */
-void room_insert(room * r, serv_msg * msg);
-
+int room_insert_msg(room * r, serv_msg * msg);
+/*Update room with specified like */
+change_mem room_insert_like(room * r, serv_msg * msg);
 #endif /* ROOM */
