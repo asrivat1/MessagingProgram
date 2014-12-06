@@ -106,7 +106,7 @@ void Read_message()
 
     if( Is_regular_mess( service_type ) )
     {
-        printf("Got a regular message sent to %s of type %d\n", target_groups[0], msg_buf->type);
+        printf("\nGot a regular message sent to %s of type %d\n", target_groups[0], msg_buf->type);
 
         /* Ignore if from self */
         if(!strcmp(sender, Private_group))
@@ -151,11 +151,11 @@ void Read_message()
             {
                 /* Join */
                 case 1:
-                    user_join(users[atoi(&sender[7])], msg_buf->username);
+                    user_join(users[atoi(&sender[7])], msg_buf);
                     break;
                 /* Leave */
                 case -1:
-                    user_leave(users[atoi(&sender[7])], msg_buf->username);
+                    user_leave(users[atoi(&sender[7])], msg_buf);
                     break;
                 /* Merge */
                 case 4:
