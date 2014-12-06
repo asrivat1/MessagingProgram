@@ -82,7 +82,19 @@ int main(int argc, char *argv[])
 
     return 0;
 }
-
+/* FIXME: fix memory issue: must allocate space for msg_rec before receiving a msg.
+ * This is because msgs will be stored in memory, and overwriting the msg destroys
+ * everything.
+ * POSSIBLE FIX: instead of allocating space each time, if the msg is actually a msg
+ * that will be stored somewhere (like, unlike, txt msg) then allocate new space
+ *
+ * FIXME: make sure that the only msgs being handled (written to file, put in LTS data structure,
+ * and do room operations on) are new msgs (greater than the LTS of highest val
+ * in lamp data structure) 
+ *
+ * FIXME: only pass msgs along to client if they are relavent-- by this I mean that
+ * they cause a "change" in the most recent msgs in a room
+ * */
 void Read_message()
 {
     static char in_mess[MAX_MESSLEN];
@@ -143,6 +155,13 @@ void Read_message()
             /* Handle join/leave messages */
             switch(msg_rec->type)
             {
+                /*FIXME: Issue is that we do not store join and leave messages.
+                 *       If we are keeping them in their own data structure, we
+                 *       need to make sure the string is allocated so it doesn't
+                 *       get corrupted.
+                 *FIX IDEA:
+                 *       Allocate new string in user list code when needed to store.
+                 *       Abstract memory to user list. */
                 /* Join */
                 case 1:
                     user_join(users[sender[7] - 48], msg_rec->username);
@@ -160,6 +179,8 @@ void Read_message()
                     {
                         ptr[i] = msg_rec->payload[i];
                     }
+                    /* FIXME: This should only be run once the server
+                     * has all information. It makes no sense to do it everytime. */
                     /* See if this is has a max or min */
                     for(i = 0; i < 5; i++)
                     {
