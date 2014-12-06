@@ -32,6 +32,9 @@ int room_insert_msg(room * r, serv_msg * msg){
     ctext = r->t_head;
     short pass = 0;
     int change = 0;
+
+    printf("Room insert msg\n");
+
     /*find correct spot */
     while(ctext->next != NULL && ltscomp(msg->stamp, ctext->next->msg->stamp) > 0) {
         if(ctext == r->recent)

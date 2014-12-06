@@ -27,8 +27,16 @@ void room_list_update(room_node * r, serv_msg * msg){
     if(curr->next == NULL || strcmp(curr->next->r->name, msg->room) != 0) {
         printf("Room Created\n");
         temp = malloc(sizeof(room_node));
+        if(temp == 0)
+        {
+            perror("MALLOC HAS FAILED US\n");
+            exit(1);
+        }
+        printf("About to room_init\n");
         temp->r = room_init(msg->room);
+        printf("About to temp->next = curr->next\n");
         temp->next = curr->next;
+        printf("About to curr->next = temp\n");
         curr->next = temp;
     }
     /*Add msg to room*/
