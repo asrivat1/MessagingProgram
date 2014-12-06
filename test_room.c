@@ -99,6 +99,7 @@ int main(){
      * Not really a real test, just a print!*/
     printf("Testing Print\n");
     print_room(r, 0);
+    printf("Testing del\n");
     del_room(r);
     return 1;
 }

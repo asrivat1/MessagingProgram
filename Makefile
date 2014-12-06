@@ -21,8 +21,8 @@ test_lamp_struct: test_lamp_struct.o server_include.o msg_stack.o lamp_struct.o
 test_like_list: test_like_list.o like_list.o server_include.o
 	$(CC) $(CFLAGS) -o test_like_list test_like_list.o like_list.o server_include.o
 
-test_room: test_room.o like_list.o server_include.o room.o
-	$(CC) $(CFLAGS) -o test_room test_room.o like_list.o server_include.o room.o
+test_room: test_room.o like_list.o server_include.o room.o user_list.o
+	$(CC) $(CFLAGS) -o test_room test_room.o like_list.o server_include.o room.o user_list.o
 
 clean:
 	rm -f *.o sp_user class_user server client test_lamp_struct test_like_list
