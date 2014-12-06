@@ -119,7 +119,7 @@ void Read_message()
         {
             /* If it's not a server only message and we don't already have it */
             if((msg_buf->type != 4) && (abs(msg_buf->type) != 1)
-                    && ltscomp(msg_buf->stamp, messages->s_list[sender[7] - 48]->arr[messages->s_list[sender[7] - 48]->size - 1]->stamp) == 1 )
+                    && ltscomp(msg_buf->stamp, messages->s_list[atoi(&sender[7])]->arr[messages->s_list[atoi(&sender[7])]->size - 1]->stamp) == 1 )
             {
                 /* Allocate new memory for storage */
                 msg_rec = malloc(sizeof(serv_msg));
@@ -151,11 +151,11 @@ void Read_message()
             {
                 /* Join */
                 case 1:
-                    user_join(users[sender[7] - 48], msg_buf->username);
+                    user_join(users[atoi(&sender[7])], msg_buf->username);
                     break;
                 /* Leave */
                 case -1:
-                    user_leave(users[sender[7] - 48], msg_buf->username);
+                    user_leave(users[atoi(&sender[7])], msg_buf->username);
                     break;
                 /* Merge */
                 case 4:
@@ -170,7 +170,7 @@ void Read_message()
                     for(i = 0; i < 5; i++)
                     {
                         if(max[i] == 0 || ltscomp(payload_lts[i], *max[i]) == 1
-                                || (ltscomp(payload_lts[i], *max[i]) == 0 && (sender[7] - 48) < max_sender[i]))
+                                || (ltscomp(payload_lts[i], *max[i]) == 0 && atoi(&sender[7]) < max_sender[i]))
                         {
                             if(max[i] == 0)
                             {
@@ -178,7 +178,7 @@ void Read_message()
                             }
                             max[i]->server = payload_lts[i].server;
                             max[i]->index = payload_lts[i].index;
-                            max_sender[i] = sender[7] - 48;
+                            max_sender[i] = atoi(&sender[7]);
                         }
                         else if(min[i] == 0 || ltscomp(payload_lts[i], *min[i]) == -1)
                         {
