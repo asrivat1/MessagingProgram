@@ -3,7 +3,7 @@
 
 lamp_struct * lamp_struct_init();
 void lamp_struct_insert(lamp_struct * ls, serv_msg * msg);
-int * lamp_array(lamp_struct * ls);
+lts * lamp_array(lamp_struct * ls);
 
 lamp_struct * lamp_struct_init(){
     int i;
