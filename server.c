@@ -19,14 +19,14 @@ lts * lamport_time;
 char server_group[] = "Servers";
 char User[] = "Server#";
 char spread_name[] = "10210";
-user * users[5];
+user * users[NUM_SERVERS];
 int ret;
 FILE *fd;
 int proc_index;
 serv_msg * msg_rec;
-lts * max[5];
-int max_sender[5];
-lts * min[5];
+lts * max[NUM_SERVERS];
+int max_sender[NUM_SERVERS];
+lts * min[NUM_SERVERS];
 int num_merged = 0;
 int num_lts = 0;
 
@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
     msg_rec = malloc(sizeof(serv_msg));
 
     int i;
-    for(i = 0; i < 5; i++)
+    for(i = 0; i < NUM_SERVERS; i++)
     {
         users[i] = malloc(sizeof(user));
         max[i] = malloc(sizeof(lts));
@@ -95,7 +95,7 @@ void Read_message()
     int16 mess_type;
     membership_info memb_info;
     int i;
-    lts payload_lts[5];
+    lts payload_lts[NUM_SERVERS];
     char * ptr;
     serv_msg * msg_buf = malloc(sizeof(serv_msg));
 
@@ -106,7 +106,7 @@ void Read_message()
 
     if( Is_regular_mess( service_type ) )
     {
-        printf("Got a regular message sent to: %s\n", target_groups[0]);
+        printf("Got a regular message sent to %s of type %d\n", target_groups[0], msg_buf->type);
 
         /* Ignore if from self */
         if(!strcmp(sender, Private_group))
@@ -162,12 +162,12 @@ void Read_message()
                     num_lts++;
                     /* Retreive the array of LTS */
                     ptr = payload_lts;
-                    for(i = 0; i < sizeof(lts) * 5; i++)
+                    for(i = 0; i < sizeof(lts) * NUM_SERVERS; i++)
                     {
                         ptr[i] = msg_buf->payload[i];
                     }
                     /* See if this is has a max or min */
-                    for(i = 0; i < 5; i++)
+                    for(i = 0; i < NUM_SERVERS; i++)
                     {
                         if(max[i] == 0 || ltscomp(payload_lts[i], *max[i]) == 1
                                 || (ltscomp(payload_lts[i], *max[i]) == 0 && atoi(&sender[7]) < max_sender[i]))
@@ -228,10 +228,10 @@ void Read_message()
         {
             int server_index;
             int merge_case = 0;
-            printf("Server group membership change.\n");
+            printf("\nServer group membership change.\n");
             for (i=0; i < NUM_SERVERS; i++)
             {
-                prev_group_status[i] = group_status[i];
+                prev_group_status[i] = (i != proc_index) ? group_status[i] : 1;
                 group_status[i] = 0;
             }
             for (i=0 ; i < num_groups; i++)
@@ -250,7 +250,7 @@ void Read_message()
             if (merge_case)
             {
                 /* Deal with it */
-                printf("Merging!\n");
+                printf("\nMerging!\n");
                 num_merged = num_groups;
                 merge();
             }
@@ -262,9 +262,9 @@ void merge_messages()
 {
     int i;
     int j;
-    serv_msg * msg_send;
+    serv_msg * msg_send = malloc(sizeof(msg_send));
 
-    for(i = 0; i < 5; i++)
+    for(i = 0; i < NUM_SERVERS; i++)
     {
         /* If I have the max LTS for that server */
         if(max_sender[i] == proc_index)
@@ -281,16 +281,18 @@ void merge_messages()
             }
         }
     }
+
+    free(msg_send);
 }
 
 void merge()
 {
     int i;
     int * server_lts;
-    serv_msg * msg_send;
+    serv_msg * msg_send = malloc(sizeof(msg_send));
 
     /* Clear previous max/min */
-    for(i = 0; i < 5; i++)
+    for(i = 0; i < NUM_SERVERS; i++)
     {
         max_sender[i] = -1;
         free(max[i]);
@@ -300,7 +302,7 @@ void merge()
     /* Send my LTS for each server */
     server_lts = lamp_array(messages);
     char * ptr = server_lts;
-    for(i = 0; i < sizeof(lts) * 5; i++)
+    for(i = 0; i < sizeof(lts) * NUM_SERVERS; i++)
     {
         msg_send->payload[i] = ptr[i];
     }
@@ -319,6 +321,8 @@ void merge()
         }
         current = current->next;
     }
+
+    free(msg_send);
 }
 
 void handle_input(int argc, char * argv[]) {
