@@ -1,15 +1,20 @@
 #include "room.h"
+#include <stdio.h>
+#include <string.h>
 
 room * room_init(char * name);
 int room_insert_msg(room * r, serv_msg * msg);
 change_mem room_insert_like(room *r, serv_msg * msg);
+void print_room(room * r, int recent);
+void del_room(room * r);
 
 
 room * room_init(char * name) {
     room * r = malloc(sizeof(room));
     text * t_head = malloc(sizeof(text));
     t_head->next = NULL;
-    r->name = name;
+    r->name = malloc(strnlen(name, 30));
+    strncpy(r->name, name, 30);
     r->t_head = t_head;
     r->recent = t_head;
     r->size = 0;
@@ -28,7 +33,7 @@ int room_insert_msg(room * r, serv_msg * msg){
             pass = 1;
         ctext = ctext->next;
     }
-    if(ltscomp(msg->stamp, ctext->next->msg->stamp) == 0) {
+    if(ctext->next && ltscomp(msg->stamp, ctext->next->msg->stamp) == 0) {
         /*If the msg type is DUMMY, then add msg, note change
           if in most recent*/
         if(ctext->next->msg->type == DUMMY) {
@@ -80,7 +85,7 @@ change_mem room_insert_like(room * r, serv_msg * msg){
         ctext = ctext->next;
     }
     /* msg is in structure-update like list */
-    if(ltscomp(*liked_stamp, ctext->next->msg->stamp) == 0) {
+    if(ctext->next && ltscomp(*liked_stamp, ctext->next->msg->stamp) == 0) {
             change = like_list_update(ctext->next->likes, msg);
             if(change.change && pass)
                 change.change = 1;
@@ -98,18 +103,41 @@ change_mem room_insert_like(room * r, serv_msg * msg){
         temp = malloc(sizeof(serv_msg));
         temp->stamp = *liked_stamp;
         temp->type = DUMMY;
+        ntext->msg = temp;
     }
     return change;
 }
 
-/*
 void print_room(room * r, int recent) {
-    int i = 1;
-    text * temp = r->t_head;
+    int i = 0;
+    text * temp = r->t_head->next;
     if(recent)
         temp = r->recent->next;
-    while(recent) {
-        printf(
+    /*TODO: Print attendees */
+    printf("ROOM: %s \n", r->name);
+    while(temp) {
+        if(temp->msg->type == DUMMY)
+            continue;
+        printf("%2d. %s: %-80s \t Likes: %d\n", ++i, temp->msg->username, 
+               temp->msg->payload, temp->likes->num_likes);
+        temp = temp->next;
     }
 }
-*/
+
+void del_room(room * r) {
+    text * curr = r->t_head;
+    text * temp;
+    while(curr) {
+        temp = curr;
+        curr = curr->next;
+        if(temp->msg)
+            free(temp->msg);
+        if(temp->likes) {
+            del_like_list(temp->likes);
+        }
+        free(temp);
+    }
+    /*TODO: Free attendees */
+    free(r->name);
+    free(r);
+}
