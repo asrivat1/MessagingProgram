@@ -16,7 +16,7 @@
 static mailbox Mbox;
 static char Private_group[MAX_GROUP_NAME];
 lamp_struct * messages;
-room_node * room_list;
+room_node * rooms;
 lts * lamport_time;
 char server_group[] = "Servers";
 char User[] = "Server#";
@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
     
     handle_input(argc, argv);
 
-    room_list = room_list_init();
+    rooms = room_list_init();
 
     /* Set up LTS data structure */
     lamport_time = malloc(sizeof(lts));
@@ -124,6 +124,9 @@ void Read_message()
         /* If from another server */
         if(!strcmp(target_groups[0], server_group))
         {
+            /* Put it in the room */
+            room_list_update(rooms, msg_buf);
+
             /* If it's not a server only message and we don't already have it */
             if((msg_buf->type != 4) && (abs(msg_buf->type) != 1)
                     && ltscomp(msg_buf->stamp, lamp_array(messages)[atoi(&sender[7])]) == 1)
@@ -231,6 +234,7 @@ void Read_message()
             msg_rec = malloc(sizeof(serv_msg));
             memcpy(msg_rec, msg_buf, sizeof(serv_msg));
             lamp_struct_insert(messages, msg_rec);
+            room_list_update(rooms, msg_rec);
 
             ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_buf);
             checkError("Multicast");
@@ -260,6 +264,14 @@ void Read_message()
                 if (!prev_group_status[server_index])
                 {
                     merge_case = 1;
+                }
+            }
+            for(i = 0; i < NUM_SERVERS; i++)
+            {
+                /* If a client left */
+                if(prev_group_status[i] > group_status[i])
+                {
+                    clear_server(i);
                 }
             }
             if (merge_case)
@@ -369,29 +381,29 @@ void clear_server(int server)
     {
         user * tmp = current;
         current = current->next;
+        /* TODO send a leave msg */
         free(tmp);
     }
 }
-/* send room to client.
- * 1 for history means start at begining
- *TODO: Get to actually send to specified client.
-        This will probably require additional parameters
-        Send attendee info */
-void send_room(char * rm, int history) {
-    room * r = room_list_get_room(room_list, rm);
+/* send room to client */
+void send_room(char * rm) {
+    room * r = room_list_get_room(rooms, rm);
     text * t = r->t_head->next;
-    if(! history)
-        t = r->recent->next;
     l_node * l;
     while(t) {
         /*SEND t->msg */
+        ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) t->msg);
+        checkError("Multicast");
         l = t->likes->sentinal->next;
         while(l) {
             /*SEND l->msg */
+            ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) l->msg);
+            checkError("Multicast");
             l = l->next;
         }
         t = t->next;
-    } 
+    }
+    /* TODO Send attendee info */ 
 }
 
 void sendFakeMsg()
