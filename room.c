@@ -12,22 +12,31 @@ void del_room(room * r);
 
 
 room * room_init(char * name) {
-    room * r = malloc(sizeof(room));
+    printf("Beginning room_init\n");
+    room * r;
+    r = malloc(sizeof(room));
     if(!r) {
         perror("MALLOC ERROR\n");
         exit(1);
     }
-    text * t_head = malloc(sizeof(text));
-    if(!t_head) {
+    text * t_head;
+    printf("About to malloc t_head\n");
+    fflush(stdout);
+    t_head = calloc(1, sizeof(text));
+    printf("Done with malloc of t_head\n");
+    fflush(stdout);
+    if(t_head == 0) {
         perror("MALLOC ERROR\n");
         exit(1);
     }
+    printf("About to set t_head->next = NULL\n");
     t_head->next = NULL;
     r->name = malloc(sizeof(char) * 30);
     if(!r->name) {
         perror("MALLOC ERROR\n");
         exit(1);
     }
+    printf("About to strncpy\n");
     strncpy(r->name, name, 30);
     r->t_head = t_head;
     r->recent = t_head;
@@ -39,6 +48,7 @@ room * room_init(char * name) {
     }
     r->users->next = NULL;
     r->users->instances = 0;
+    printf("Done with room_init\n");
     return r; 
 }
 
@@ -48,8 +58,6 @@ int room_insert_msg(room * r, serv_msg * msg){
     ctext = r->t_head;
     short pass = 0;
     int change = 0;
-
-    printf("Room insert msg\n");
 
     /*find correct spot */
     while(ctext->next != NULL && ltscomp(msg->stamp, ctext->next->msg->stamp) > 0) {

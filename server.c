@@ -48,13 +48,33 @@ int main(int argc, char *argv[])
 {
     /* Allocate memory and handle input */
     msg_rec = malloc(sizeof(serv_msg));
+    if(msg_rec == 0)
+    {
+        perror("MALLOC HATES ME\n");
+        exit(1);
+    }
 
     int i;
     for(i = 0; i < NUM_SERVERS; i++)
     {
         users[i] = malloc(sizeof(user));
+        if(users[i] == 0)
+        {
+            perror("MALLOC HATES ME\n");
+            exit(1);
+        }
         max[i] = malloc(sizeof(lts));
+        if(max[i] == 0)
+        {
+            perror("MALLOC HATES ME\n");
+            exit(1);
+        }
         min[i] = malloc(sizeof(lts));
+        if(min[i] == 0)
+        {
+            perror("MALLOC HATES ME\n");
+            exit(1);
+        }
     }
 
     messages = lamp_struct_init();
@@ -65,6 +85,11 @@ int main(int argc, char *argv[])
 
     /* Set up LTS data structure */
     lamport_time = malloc(sizeof(lts));
+    if(lamport_time == 0)
+    {
+        perror("MALLOC HATES ME\n");
+        exit(1);
+    }
     lamport_time->server = proc_index;
     lamport_time->index = 1;
 
@@ -103,6 +128,11 @@ void Read_message()
     lts payload_lts[NUM_SERVERS];
     char * ptr;
     serv_msg * msg_buf = malloc(sizeof(serv_msg));
+    if(msg_buf == 0)
+    {
+        perror("MALLOC HATES ME\n");
+        exit(1);
+    }
 
     /* Receive messages */
     ret = SP_receive( Mbox, &service_type, sender, MAX_MEMBERS, &num_groups, target_groups,
@@ -125,7 +155,9 @@ void Read_message()
         if(!strcmp(target_groups[0], server_group))
         {
             /* Put it in the room */
+            printf("About to room_list_update\n");
             room_list_update(rooms, msg_buf);
+            printf("Finished room_list_update\n");
 
             /* If it's not a server only message and we don't already have it */
             if((msg_buf->type != 4) && (abs(msg_buf->type) != 1)
@@ -134,6 +166,11 @@ void Read_message()
                 printf("Handling a like or text message\n");
                 /* Allocate new memory for storage */
                 msg_rec = malloc(sizeof(serv_msg));
+                if(msg_rec == 0)
+                {
+                    perror("MALLOC HATES ME\n");
+                    exit(1);
+                }
                 memcpy(msg_rec, msg_buf, sizeof(serv_msg));
 
                 /* Increment LTS */
@@ -165,7 +202,9 @@ void Read_message()
             {
                 /* Join */
                 case 1:
+                    /* Upon first joining a room, we must send the history */
                     user_join(users[atoi(&sender[7])], msg_buf);
+                    send_room(sender, msg_buf->room);
                     break;
                 /* Leave */
                 case -1:
@@ -189,6 +228,11 @@ void Read_message()
                             if(max[i] == 0)
                             {
                                 max[i] = malloc(sizeof(lts));
+                                if(!max[i])
+                                {
+                                    perror("MALLOC NOT WORKING\n");
+                                    exit(1);
+                                }
                             }
                             max[i]->server = payload_lts[i].server;
                             max[i]->index = payload_lts[i].index;
@@ -199,6 +243,11 @@ void Read_message()
                             if(min[i] == 0)
                             {
                                 min[i] = malloc(sizeof(lts));
+                                if(!min[i])
+                                {
+                                    perror("MALLOC NOT WORKING\n");
+                                    exit(1);
+                                }
                             }
                             min[i]->server = payload_lts[i].server;
                             min[i]->index = payload_lts[i].index;
@@ -232,6 +281,11 @@ void Read_message()
 
             /* Add to list of messages and handle */
             msg_rec = malloc(sizeof(serv_msg));
+            if(!msg_rec)
+            {
+                perror("MALLOC NOT WORKING\n");
+                exit(1);
+            }
             memcpy(msg_rec, msg_buf, sizeof(serv_msg));
             lamp_struct_insert(messages, msg_rec);
             room_list_update(rooms, msg_rec);
@@ -289,7 +343,12 @@ void merge_messages()
 {
     int i;
     int j;
-    serv_msg * msg_send = malloc(sizeof(msg_send));
+    serv_msg * msg_send = malloc(sizeof(serv_msg));
+    if(msg_send == 0)
+    {
+        perror("MALLOC HATES ME\n");
+        exit(1);
+    }
 
     printf("\nMerging messages\n");
 
@@ -313,7 +372,6 @@ void merge_messages()
     }
     
     sendFakeMsg();
-
     free(msg_send);
 }
 
@@ -322,6 +380,11 @@ void merge()
     int i;
     lts * server_lts;
     serv_msg * msg_send = malloc(sizeof(msg_send));
+    if(msg_send == 0)
+    {
+        perror("MALLOC HATES ME\n");
+        exit(1);
+    }
 
     /* Clear previous max/min */
     for(i = 0; i < NUM_SERVERS; i++)
@@ -376,39 +439,81 @@ void handle_input(int argc, char * argv[]) {
 
 void clear_server(int server)
 {
+    int i;
+    serv_msg * send_msg = malloc(sizeof(serv_msg));
+    if(send_msg == 0)
+    {
+        perror("MALLOC DID NOT WORK :(\n");
+        exit(1);
+    }
+
     user * current = users[server]->next;
     while(current != 0)
     {
         user * tmp = current;
         current = current->next;
-        /* TODO send a leave msg */
+        strcpy(send_msg->username, tmp->username);
+        strcpy(send_msg->room, tmp->room);
+
+        for(i = 0; i < tmp->instances; i++)
+        {
+            ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) send_msg);
+            checkError("Multicast");
+        }
+
         free(tmp);
     }
 }
 /* send room to client */
-void send_room(char * rm) {
+void send_room(char * client_group, char * rm) {
+    int i;
+
+    serv_msg * send_msg = malloc(sizeof(serv_msg));
+    if(send_msg == 0)
+    {
+        perror("MALLOC DID NOT WORK :(\n");
+        exit(1);
+    }
+    send_msg->type = 1;
     room * r = room_list_get_room(rooms, rm);
     text * t = r->t_head->next;
     l_node * l;
     while(t) {
         /*SEND t->msg */
-        ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) t->msg);
+        ret = SP_multicast(Mbox, SAFE_MESS, client_group, 2, sizeof(serv_msg), (char *) t->msg);
         checkError("Multicast");
         l = t->likes->sentinal->next;
         while(l) {
             /*SEND l->msg */
-            ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) l->msg);
+            ret = SP_multicast(Mbox, SAFE_MESS, client_group, 2, sizeof(serv_msg), (char *) l->msg);
             checkError("Multicast");
             l = l->next;
         }
         t = t->next;
     }
-    /* TODO Send attendee info */ 
+    /* Send attendee info */ 
+    user * curr_user = r->users;
+    while(curr_user)
+    {
+        /* Send a join for that user */
+        strcpy(send_msg->username, curr_user->username);
+        strcpy(send_msg->room, rm);
+        for(i = 0; i < curr_user->instances; i++)
+        {
+            ret = SP_multicast(Mbox, SAFE_MESS, client_group, 2, sizeof(serv_msg), (char *) send_msg);
+            checkError("Multicast");
+        }
+    }
 }
 
 void sendFakeMsg()
 {
     serv_msg * send_msg = malloc(sizeof(serv_msg));
+    if(send_msg == 0)
+    {
+        perror("MALLOC DID NOT WORK :(\n");
+        exit(1);
+    }
     send_msg->type = 2;
     lamport_time->index++;
     send_msg->stamp.index = lamport_time->index;
