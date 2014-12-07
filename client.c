@@ -171,7 +171,7 @@ void Read_input()
             sprintf(r_name, "%s", command + 2);
             m_room = room_init(r_name);
             sprintf(chatroom, "%s", command + 2);
-            sprintf(server_room_group, "%sS%d", command + 2, proc_index);
+            sprintf(server_room_group, "%s-Server%d", command + 2, proc_index);
             ret = SP_join(Mbox, server_room_group);
             sprintf(msg_send->username, "%s", username);
             sprintf(msg_send->room, "%s", chatroom);
