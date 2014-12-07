@@ -32,4 +32,6 @@ void print_room(room * r, int recent);
 void room_update_user(room * r, serv_msg * msg);
 /*Delete room*/
 void del_room(room * r);
+/* get lts of line num */
+lts get_lts(room * r, int line_num);
 #endif /* ROOM */

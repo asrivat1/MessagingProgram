@@ -373,6 +373,7 @@ void merge_messages()
     
     sendFakeMsg();
     free(msg_send);
+    msg_send = 0;
 }
 
 void merge()
@@ -391,7 +392,9 @@ void merge()
     {
         max_sender[i] = -1;
         free(max[i]);
+        max[i] = 0;
         free(min[i]);
+        min[i] = 0;
     }
 
     /* Send my LTS for each server */
@@ -399,6 +402,7 @@ void merge()
     char * ptr = server_lts;
     for(i = 0; i < sizeof(lts) * NUM_SERVERS; i++)
     {
+        if (i >= 80) printf("Went too far: %d\n", i);
         msg_send->payload[i] = ptr[i];
     }
     msg_send->type = 4;
@@ -420,6 +424,7 @@ void merge()
     }
 
     free(msg_send);
+    msg_send = 0;
 }
 
 void handle_input(int argc, char * argv[]) {
@@ -462,6 +467,7 @@ void clear_server(int server)
         }
 
         free(tmp);
+        tmp = 0;
     }
 }
 /* send room to client */
@@ -518,9 +524,9 @@ void sendFakeMsg()
     lamport_time->index++;
     send_msg->stamp.index = lamport_time->index;
     send_msg->stamp.server = proc_index;
-    sprintf(send_msg->username, "FakeUser");
-    sprintf(send_msg->room, "FakeRoom");
-    sprintf(send_msg->payload, "Message %d from Server%d", lamport_time->index, proc_index);
+    sprintf(send_msg->username, "FakeUser\0");
+    sprintf(send_msg->room, "FakeRoom\0");
+    sprintf(send_msg->payload, "Message %d from Server%d\0", lamport_time->index, proc_index);
     ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) send_msg);
     checkError("Multicast");
 }
