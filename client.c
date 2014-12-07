@@ -177,9 +177,8 @@ void Read_input()
             m_room = room_init(r_name);
             sprintf(chatroom, "%s", command + 2);
             chatroom[ strlen(chatroom) - 1] = '\0';
-            printf("CHATROOM: %s\n", chatroom);
+            printf("Joining chatroom: %s\n", chatroom);
             sprintf(server_room_group, "%s-Server%d", chatroom, proc_index);
-            printf("SERVER ROOM GROUP: %s\n", server_room_group);
             ret = SP_join(Mbox, server_room_group);
             sprintf(msg_send->username, "%s", username);
             sprintf(msg_send->room, "%s", chatroom);
@@ -290,13 +289,7 @@ void Read_message()
 
     if( Is_regular_mess( service_type ) )
     {
-        printf("Got a regular message\n");
 
-        /* If about my room 
-        if(in_room != 0 && !strcmp(target_groups[0], server_room_group)) 
-        */
-        printf("SERVER: %d, IDEX: %d\n", msg_rec->stamp.server, msg_rec->stamp.index);
-        printf("%d \n", msg_rec->type);
         /* Handle message */
         if(msg_rec->type == VIEW) {
             int j;
@@ -307,34 +300,20 @@ void Read_message()
             }
         }
         else if(msg_rec->type == MSG) {
-            printf("Got a msg\n");
             temp = malloc(sizeof(serv_msg));
             memcpy(temp, msg_rec, sizeof(serv_msg)); 
-            if(room_insert_msg(m_room, temp)) {
-                printf("NEW RECENT MSG\n");
-            }
-            else
-                printf("OLD MSG, DONT DISPLAY \n");
+            room_insert_msg(m_room, temp);
         }
         else if(msg_rec->type == LIKE || msg_rec->type == UNLIKE) {
-            printf("Got a like\n");
             lts * lampstamp = (lts *) msg_rec->payload;
-            printf("LS, server: %d, index %d \n", lampstamp->server, lampstamp->index); 
             temp = malloc(sizeof(serv_msg));
             memcpy(temp, msg_rec, sizeof(serv_msg)); 
             c_m = room_insert_like(m_room, temp);
-            if(c_m.change){
-                printf("Fresh like \n");
-            }
-            else
-                printf("Old Like \n");
             if(c_m.msg != NULL) {
-                printf("FREEING MSG \n");
                 free(c_m.msg);
             }
         }
         else if(msg_rec->type == JOIN || msg_rec->type == LEAVE) {
-            printf("Got a Join/Leave \n");
             room_update_user(m_room, msg_rec);
         }
 
@@ -358,7 +337,6 @@ void Read_message()
             if(!serverConnected)
             {
 
-                printf("YOLO3\n");
                 sprintf(msg_send->username, "%s", username);
                 sprintf(msg_send->room, "%s", chatroom);
                 msg_send->type = LEAVE;
