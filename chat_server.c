@@ -133,6 +133,11 @@ int main(int argc, char *argv[])
     checkError("Join");
     ret = SP_join(Mbox, User);
     checkError("Join");
+    char server_client[MAX_GROUP_NAME];
+    sprintf(server_client, "Server%d-Client", proc_index);
+    ret = SP_join(Mbox, server_client);
+    checkError("Join");
+
 
     /* Set up E - DO NOT MOVE */
 	E_init();
@@ -267,16 +272,20 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
                 lamp_struct_insert(messages, msg_rec);
             }
 
-            room_list_update(rooms, msg_rec);
+            if(msg_buf->type != 5)
+            {
+                room_list_update(rooms, msg_rec);
+            }
 
             /* If it's a view, send that */
-            if(msg_buf->type == 5)
+            if(msg_buf->type == VIEW)
             {
                 for(i = 0; i < NUM_SERVERS; i++)
                 {
-                    msg_rec->payload[i] = sprintf("%d", group_status[i]);
+                    sprintf(msg_rec->payload + i, "%d", group_status[i]);
                 }
-                ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_rec);
+                printf("Sending view %s\n", msg_rec->payload);
+                ret = SP_multicast(Mbox, SAFE_MESS, sender, 2, sizeof(serv_msg), (char *) msg_rec);
                 checkError("Multicast");
             }
 
@@ -286,8 +295,11 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
                 send_room(sender, msg_buf->room);
             }
 
-            ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_buf);
-            checkError("Multicast");
+            if(msg_buf->type != 5)
+            {
+                ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_buf);
+                checkError("Multicast");
+            }
         }
         /* Send message to client unless it's an LTS array */
         if(msg_buf->type != 4 && msg_buf->type != 5)
