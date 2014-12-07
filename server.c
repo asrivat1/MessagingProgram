@@ -420,7 +420,7 @@ void merge_messages()
                 if(min[i] != 0 && (ltscomp(messages->s_list[i]->arr[j]->stamp, *min[i]) == 0
                         || ltscomp(messages->s_list[i]->arr[j]->stamp, *min[i]) == 1))
                 {
-                    memcpy(msg_send, messages->s_list[i]->arr[j]);
+                    memcpy(msg_send, messages->s_list[i]->arr[j], sizeof(serv_msg));
                     printf("Sending %s\n", msg_send->payload);
                     ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_send);
                     checkError("Multicast");
