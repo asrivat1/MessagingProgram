@@ -323,7 +323,7 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
         }
     }
 }
-
+/* FIXME: Don't need to allocate memory twice */
 void storeMessage(serv_msg * msg_buf)
 {
     /* Allocate new memory for storage */
