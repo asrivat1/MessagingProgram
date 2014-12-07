@@ -323,7 +323,7 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
         }
     }
 }
-
+/* FIXME: Don't need to allocate memory twice */
 void storeMessage(serv_msg * msg_buf)
 {
     /* Allocate new memory for storage */
@@ -454,7 +454,11 @@ void merge()
 
     /* Send my LTS for each server */
     server_lts = lamp_array(messages);
-    memcpy(server_lts, msg_send->payload, sizeof(lts) * NUM_SERVERS);
+    memcpy(msg_send->payload, server_lts, sizeof(lts) * NUM_SERVERS);
+    for(i = 0; i < NUM_SERVERS; i++)
+    {
+        printf("Sending Server%d Index%d\n", server_lts[i].server, server_lts[i].index);
+    }
     msg_send->type = 4;
     ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_send);
     checkError("Multicast");
@@ -472,10 +476,6 @@ void merge()
         }
         current = current->next;
     }
-
-    free(msg_send);
-    msg_send = 0;
-}
 
 void handle_input(int argc, char * argv[]) {
     if(argc < 1) {
