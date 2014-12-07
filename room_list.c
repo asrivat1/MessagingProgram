@@ -25,12 +25,10 @@ room_node * room_list_init() {
 void room_list_update(room_node * r, serv_msg * msg){
     room_node * curr = r;
     room_node * temp;
-    printf("About to while\n");
     while(curr->next != NULL && strcmp(curr->next->r->name, msg->room) < 0){
         curr = curr->next;
     }
     /*Room needs to be made */
-    printf("About to make new room\n");
     if(curr->next == NULL || strcmp(curr->next->r->name, msg->room) != 0) {
         temp = malloc(sizeof(room_node));
         if(temp == 0)
@@ -38,14 +36,11 @@ void room_list_update(room_node * r, serv_msg * msg){
             perror("MALLOC HAS FAILED US\n");
             exit(1);
         }
-        printf("About to room_init %s\n", msg->room);
         temp->r = room_init(msg->room);
-        printf("Finished room_init\n");
         temp->next = curr->next;
         curr->next = temp;
     }
     /*Add msg to room*/
-    printf("About to room_insert_msg\n");
     if(msg->type == MSG)
         room_insert_msg(curr->next->r, msg);
     /*Add like to room*/
