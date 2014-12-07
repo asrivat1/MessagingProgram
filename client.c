@@ -249,7 +249,8 @@ void Read_input()
             break;
         /* View other servers */
         case 'v':
-            printf("We haven't implemented this yet \n");
+            msg_send->type = VIEW;
+            ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_send);
             break;
         case 'q':
             /*Send Leave msg */
@@ -297,7 +298,15 @@ void Read_message()
         printf("SERVER: %d, IDEX: %d\n", msg_rec->stamp.server, msg_rec->stamp.index);
         printf("%d \n", msg_rec->type);
         /* Handle message */
-        if(msg_rec->type == MSG) {
+        if(msg_rec->type == VIEW) {
+            int j;
+            printf("Servers in View \n");
+            for(j = 0; j < 5; j++ ){
+                if(msg_rec->payload[j] == '1'); 
+                    printf("Server_%d\n", j);
+            }
+        }
+        else if(msg_rec->type == MSG) {
             printf("Got a msg\n");
             temp = malloc(sizeof(serv_msg));
             memcpy(temp, msg_rec, sizeof(serv_msg)); 
