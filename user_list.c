@@ -26,7 +26,7 @@ void user_join(user * u, serv_msg * joined)
         if(strcmp(current->next->username, joined->username) == 0 &&
            strcmp(current->next->room, joined->room) == 0)
         {
-            current->instances++;
+            current->next->instances++;
             return;
         }
 
@@ -53,8 +53,9 @@ void user_leave(user * u, serv_msg * joined)
         if(strcmp(current->next->username, joined->username) == 0 &&
            strcmp(current->next->room, joined->room) == 0 )
         {
+            current->next->instances -= 1;
             /* Remove the user if no instances */
-            if(--current->next->instances == 0)
+            if(current->next->instances == 0)
             {
                 user * tmp = current->next;
                 current->next = tmp->next;
