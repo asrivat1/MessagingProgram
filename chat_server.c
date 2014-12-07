@@ -258,7 +258,7 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
             msg_rec->stamp.index = lamport_time->index;
             msg_rec->stamp.server = proc_index;
 
-            if(msg_buf->type != 1 && msg_buf->type != -1)
+            if(msg_buf->type != 1 && msg_buf->type != -1 && msg_buf->type != 5)
             {
                 /* Write to file */
                 fd = fopen(User, "a");
@@ -268,6 +268,17 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
             }
 
             room_list_update(rooms, msg_rec);
+
+            /* If it's a view, send that */
+            if(msg_buf->type == 5)
+            {
+                for(i = 0; i < NUM_SERVERS; i++)
+                {
+                    msg_rec->payload[i] = sprintf("%d", group_status[i]);
+                }
+                ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_rec);
+                checkError("Multicast");
+            }
 
             /* If it's a join, send all info */
             if(msg_buf->type == 1)
@@ -279,7 +290,7 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
             checkError("Multicast");
         }
         /* Send message to client unless it's an LTS array */
-        if(msg_buf->type != 4)
+        if(msg_buf->type != 4 && msg_buf->type != 5)
         {
             sendToClient(msg_buf);
         }

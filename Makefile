@@ -4,13 +4,13 @@ CFLAGS=-g -Wall
 CPPFLAGS=-I. -I/home/cs437/exercises/ex3/include
 SP_LIBRARY_DIR=/home/cs437/exercises/ex3
 
-all: server client test_lamp_struct test_like_list test_room
+all: chat_server client test_lamp_struct test_like_list test_room
 
 .c.o:
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $<
 
-server:  $(SP_LIBRARY_DIR)/libspread-core.a server.o lamp_struct.o room.o like_list.o server_include.o msg_stack.o user_list.o room_list.o
-	$(LD) -o $@ server.o $(SP_LIBRARY_DIR)/libspread-core.a -ldl -lm -lrt -lnsl $(SP_LIBRARY_DIR)/libspread-util.a lamp_struct.o room.o like_list.o server_include.o msg_stack.o user_list.o room_list.o
+chat_server:  $(SP_LIBRARY_DIR)/libspread-core.a chat_server.o lamp_struct.o room.o like_list.o server_include.o msg_stack.o user_list.o room_list.o
+	$(LD) -o $@ chat_server.o $(SP_LIBRARY_DIR)/libspread-core.a -ldl -lm -lrt -lnsl $(SP_LIBRARY_DIR)/libspread-util.a lamp_struct.o room.o like_list.o server_include.o msg_stack.o user_list.o room_list.o
 
 client:  $(SP_LIBRARY_DIR)/libspread-core.a client.o lamp_struct.o room.o msg_stack.o like_list.o server_include.o user_list.o
 	$(LD) -o $@ client.o $(SP_LIBRARY_DIR)/libspread-core.a -ldl -lm -lrt -lnsl $(SP_LIBRARY_DIR)/libspread-util.a lamp_struct.o room.o msg_stack.o like_list.o server_include.o user_list.o
@@ -25,5 +25,5 @@ test_room: test_room.o like_list.o server_include.o room.o user_list.o
 	$(CC) $(CFLAGS) -o test_room test_room.o like_list.o server_include.o room.o user_list.o
 
 clean:
-	rm -f *.o sp_user class_user server client test_lamp_struct test_like_list test_room
+	rm -f *.o sp_user class_user chat_server client test_lamp_struct test_like_list test_room
 
