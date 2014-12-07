@@ -111,6 +111,7 @@ int main(int argc, char *argv[])
         {
             storeMessage(read_buf);
             printf("Reading msg from Server%d Index%d\n", read_buf->stamp.server, read_buf->stamp.index);
+            printf("Type is %d\n", read_buf->type);
             printf("%s\n", read_buf->payload);
             room_list_update(rooms, read_buf);
             read_buf = malloc(sizeof(serv_msg));
@@ -158,11 +159,6 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
             return;
         }
 
-        /* Send message to client unless it's an LTS array */
-        if(msg_buf->type != 4)
-        {
-            sendToClient(msg_buf);
-        }
 
         msg_rec = malloc(sizeof(serv_msg));
         if(!msg_rec)
@@ -179,7 +175,7 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
             room_list_update(rooms, msg_rec);
 
             /* If it's not a server only message and we don't already have it */
-            if((msg_buf->type != 4) && (abs(msg_buf->type) != 1)
+            if((msg_buf->type != 4) && msg_buf->type != 1 && msg_buf->type != -1
                     && ltscomp(msg_buf->stamp, lamp_array(messages)[atoi(&sender[7])]) == 1)
             {
                 storeMessage(msg_buf);
@@ -212,7 +208,6 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
                     /* See if this is has a max or min */
                     for(i = 0; i < NUM_SERVERS; i++)
                     {
-                        printf("Server%d, Index%d\n", payload_lts[i].server, payload_lts[i].index);
                         if(max[i] == 0 || ltscomp(payload_lts[i], *max[i]) == 1
                                 || (ltscomp(payload_lts[i], *max[i]) == 0 && atoi(&sender[7]) < max_sender[i]))
                         {
@@ -227,7 +222,6 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
                             }
                             max[i]->server = payload_lts[i].server;
                             max[i]->index = payload_lts[i].index;
-                            printf("Updating max sender to %d\n", atoi(&sender[7]));
                             max_sender[i] = atoi(&sender[7]);
                         }
                         else if(min[i] == 0 || ltscomp(payload_lts[i], *min[i]) == -1)
@@ -257,7 +251,14 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
         /* Otherwise it's from client */
         else
         {
-            if(abs(msg_buf->type) != 1)
+            /* Increment LTS */
+            lamport_time->index++;
+            msg_buf->stamp.index = lamport_time->index;
+            msg_buf->stamp.server = proc_index;
+            msg_rec->stamp.index = lamport_time->index;
+            msg_rec->stamp.server = proc_index;
+
+            if(msg_buf->type != 1 && msg_buf->type != -1)
             {
                 /* Write to file */
                 fd = fopen(User, "a");
@@ -276,6 +277,11 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
 
             ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_buf);
             checkError("Multicast");
+        }
+        /* Send message to client unless it's an LTS array */
+        if(msg_buf->type != 4)
+        {
+            sendToClient(msg_buf);
         }
     }
     else if( Is_reg_memb_mess(service_type))
@@ -353,10 +359,6 @@ void sendToClient(serv_msg * msg_buf)
     char client_group[MAX_GROUP_NAME];
 
     printf("%s\n", msg_buf->payload);
-    /* Increment LTS */
-    lamport_time->index++;
-    msg_buf->stamp.index = lamport_time->index;
-    msg_buf->stamp.server = proc_index;
     /* Send to the client group */
     sprintf(client_group, "%s-%s", msg_buf->room, User);
     ret = SP_multicast(Mbox, SAFE_MESS, client_group, 2, sizeof(serv_msg), (char *) msg_buf);
@@ -413,10 +415,10 @@ void merge_messages()
         {
             printf("I have max for Server%d\n", i);
             /* Send everything from min to max */
-            for(j = 0; j < messages->s_list[i]->size; i++)
+            for(j = 0; j < messages->s_list[i]->size; j++)
             {
-                if(ltscomp(messages->s_list[i]->arr[j]->stamp, *min[i]) == 0
-                        || ltscomp(messages->s_list[i]->arr[j]->stamp, *min[i]) == 1)
+                if(min != 0 && (ltscomp(messages->s_list[i]->arr[j]->stamp, *min[i]) == 0
+                        || ltscomp(messages->s_list[i]->arr[j]->stamp, *min[i]) == 1))
                 {
                     msg_send = messages->s_list[i]->arr[j];
                     ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_send);
@@ -434,7 +436,7 @@ void merge()
 {
     int i;
     lts * server_lts;
-    serv_msg * msg_send = malloc(sizeof(msg_send));
+    serv_msg * msg_send = malloc(sizeof(serv_msg));
     if(msg_send == 0)
     {
         perror("MALLOC HATES ME\n");
@@ -453,11 +455,7 @@ void merge()
 
     /* Send my LTS for each server */
     server_lts = lamp_array(messages);
-    memcpy(msg_send->payload, server_lts, sizeof(lts) * NUM_SERVERS);
-    for(i = 0; i < NUM_SERVERS; i++)
-    {
-        printf("Sending Server%d Index%d\n", server_lts[i].server, server_lts[i].index);
-    }
+    memcpy(msg_send->payload, server_lts, sizeof(lts) * 5);
     msg_send->type = 4;
     ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_send);
     checkError("Multicast");
@@ -493,11 +491,14 @@ void clear_server(int server)
 {
     int i;
     serv_msg * send_msg = malloc(sizeof(serv_msg));
+    char client_group[MAX_GROUP_NAME];
     if(send_msg == 0)
     {
         perror("MALLOC DID NOT WORK :(\n");
         exit(1);
     }
+
+    send_msg->type = -1;
 
     user * current = users[server]->next;
     while(current != 0)
@@ -509,7 +510,10 @@ void clear_server(int server)
 
         for(i = 0; i < tmp->instances; i++)
         {
+            sprintf(client_group, "%s-%s", tmp->room, User);
+            ret = SP_multicast(Mbox, SAFE_MESS, client_group, 2, sizeof(serv_msg), (char *) send_msg);
             ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) send_msg);
+            room_list_update(rooms, send_msg);
             checkError("Multicast");
         }
 
@@ -566,6 +570,7 @@ void checkError(char * action) {
     if (ret < 0)
     {
         printf("Error performing %s\n", action);
+        exit(1);
     }
 }
 
