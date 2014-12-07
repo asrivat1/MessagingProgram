@@ -98,6 +98,8 @@ int main(int argc, char *argv[])
     test_timeout.sec = 5;
     test_timeout.usec = 0;
 
+    /* TODO read from file */
+
     /* Connect and join various groups */
 	ret = SP_connect_timeout( spread_name, User, 0, 1, &Mbox, Private_group, test_timeout );
     checkError("Connect");
@@ -114,33 +116,13 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-void Read_message()
+void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEMBERS][MAX_GROUP_NAME],
+        int service_type, int num_groups)
 {
-    static char in_mess[MAX_MESSLEN];
-    char sender[MAX_GROUP_NAME];
-    char target_groups[MAX_MEMBERS][MAX_GROUP_NAME];
-    char client_group[MAX_GROUP_NAME];
-    int num_groups;
-    int service_type = 0;
-    int endian_mismatch;
-    int16 mess_type;
-    membership_info memb_info;
     int i;
     lts payload_lts[NUM_SERVERS];
     char * ptr;
-
-    serv_msg * msg_buf = malloc(sizeof(serv_msg));
-    if(msg_buf == 0)
-    {
-        perror("MALLOC HATES ME\n");
-        exit(1);
-    }
-
-    /* Receive messages */
-    ret = SP_receive( Mbox, &service_type, sender, MAX_MEMBERS, &num_groups, target_groups,
-                      &mess_type, &endian_mismatch, sizeof(serv_msg), (char *) msg_buf );
-    checkError("Receive");
-    ret = SP_get_memb_info( in_mess, service_type, &memb_info );
+    char client_group[MAX_GROUP_NAME];
 
     if( Is_regular_mess( service_type ) )
     {
@@ -347,6 +329,35 @@ void Read_message()
             }
         }
     }
+}
+
+void Read_message()
+{
+    static char in_mess[MAX_MESSLEN];
+    char sender[MAX_GROUP_NAME];
+    char target_groups[MAX_MEMBERS][MAX_GROUP_NAME];
+    int service_type = 0;
+    int endian_mismatch;
+    int16 mess_type;
+    membership_info memb_info;\
+    int num_groups;
+
+    serv_msg * msg_buf = malloc(sizeof(serv_msg));
+    if(msg_buf == 0)
+    {
+        perror("MALLOC HATES ME\n");
+        exit(1);
+    }
+
+    /* Receive messages */
+    ret = SP_receive( Mbox, &service_type, sender, MAX_MEMBERS, &num_groups, target_groups,
+                      &mess_type, &endian_mismatch, sizeof(serv_msg), (char *) msg_buf );
+    checkError("Receive");
+    ret = SP_get_memb_info( in_mess, service_type, &memb_info );
+
+    /* Handle the message */
+    handleMessage(msg_buf, sender, target_groups, service_type, num_groups);
+
 }
 
 void merge_messages()
