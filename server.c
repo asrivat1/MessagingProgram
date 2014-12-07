@@ -37,9 +37,12 @@ int prev_group_status[NUM_SERVERS];
 
 void handle_input(int argc, char *argv[]);
 void Read_message();
-void handle_message(serv_msg * msg);
+void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEMBERS][MAX_GROUP_NAME],
+        int service_type, int num_groups);
 void merge_messages();
+void storeMessage(serv_msg * msg_buf);
 void merge();
+void sendToClient(serv_msg * msg_buf);
 void send_room(char * client_group, char * rm);
 void checkError(char * action);
 void clear_server(int server);
@@ -98,6 +101,8 @@ int main(int argc, char *argv[])
     test_timeout.sec = 5;
     test_timeout.usec = 0;
 
+    /* TODO read from file */
+
     /* Connect and join various groups */
 	ret = SP_connect_timeout( spread_name, User, 0, 1, &Mbox, Private_group, test_timeout );
     checkError("Connect");
@@ -114,33 +119,12 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-void Read_message()
+void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEMBERS][MAX_GROUP_NAME],
+        int service_type, int num_groups)
 {
-    static char in_mess[MAX_MESSLEN];
-    char sender[MAX_GROUP_NAME];
-    char target_groups[MAX_MEMBERS][MAX_GROUP_NAME];
-    char client_group[MAX_GROUP_NAME];
-    int num_groups;
-    int service_type = 0;
-    int endian_mismatch;
-    int16 mess_type;
-    membership_info memb_info;
     int i;
     lts payload_lts[NUM_SERVERS];
     char * ptr;
-
-    serv_msg * msg_buf = malloc(sizeof(serv_msg));
-    if(msg_buf == 0)
-    {
-        perror("MALLOC HATES ME\n");
-        exit(1);
-    }
-
-    /* Receive messages */
-    ret = SP_receive( Mbox, &service_type, sender, MAX_MEMBERS, &num_groups, target_groups,
-                      &mess_type, &endian_mismatch, sizeof(serv_msg), (char *) msg_buf );
-    checkError("Receive");
-    ret = SP_get_memb_info( in_mess, service_type, &memb_info );
 
     if( Is_regular_mess( service_type ) )
     {
@@ -153,15 +137,6 @@ void Read_message()
             return;
         }
 
-        /* Send message to client */
-        if(msg_buf->type != 4)
-        {
-            printf("%s\n", msg_buf->payload);
-            sprintf(client_group, "%s-%s", msg_buf->room, User);
-            ret = SP_multicast(Mbox, SAFE_MESS, client_group, 2, sizeof(serv_msg), (char *) msg_buf);
-            checkError("Multicast");
-        }
-
         /* If from another server */
         if(!strcmp(target_groups[0], server_group))
         {
@@ -172,33 +147,7 @@ void Read_message()
             if((msg_buf->type != 4) && (abs(msg_buf->type) != 1)
                     && ltscomp(msg_buf->stamp, lamp_array(messages)[atoi(&sender[7])]) == 1)
             {
-                /* Allocate new memory for storage */
-                msg_rec = malloc(sizeof(serv_msg));
-                if(msg_rec == 0)
-                {
-                    perror("MALLOC HATES ME\n");
-                    exit(1);
-                }
-                memcpy(msg_rec, msg_buf, sizeof(serv_msg));
-
-                /* Increment LTS */
-                if( ltscomp(msg_rec->stamp, *lamport_time) == 1 )
-                {
-                    lamport_time->index = 1 + msg_rec->stamp.index;
-                }
-                else
-                {
-                    lamport_time->index = 1 + lamport_time->index;
-                }
-
-                /* Write to file */
-                fwrite(msg_rec, sizeof(serv_msg), 1, fd);
-                fclose(fd);
-                fd = fopen(User, "a");
-
-                /* Add to list of messages and handle */
-                lamp_struct_insert(messages, msg_rec);
-
+                storeMessage(msg_buf);
             }
 
             /* Handle join/leave messages */
@@ -275,11 +224,6 @@ void Read_message()
             fclose(fd);
             fd = fopen(User, "a");
 
-            /* Send message to other servers */
-            lamport_time->index++;
-            msg_buf->stamp.index = lamport_time->index + 1;
-            msg_buf->stamp.server = proc_index;
-
             /* Add to list of messages and handle */
             msg_rec = malloc(sizeof(serv_msg));
             if(!msg_rec)
@@ -303,6 +247,11 @@ void Read_message()
 
             ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_buf);
             checkError("Multicast");
+        }
+        /* Send message to client unless it's an LTS array */
+        if(msg_buf->type != 4)
+        {
+            sendToClient(msg_buf);
         }
     }
     else if( Is_reg_memb_mess(service_type))
@@ -348,6 +297,80 @@ void Read_message()
             }
         }
     }
+}
+
+void storeMessage(serv_msg * msg_buf)
+{
+    /* Allocate new memory for storage */
+    msg_rec = malloc(sizeof(serv_msg));
+    if(msg_rec == 0)
+    {
+        perror("MALLOC HATES ME\n");
+        exit(1);
+    }
+    memcpy(msg_rec, msg_buf, sizeof(serv_msg));
+
+    /* Increment LTS */
+    if( ltscomp(msg_rec->stamp, *lamport_time) == 1 )
+    {
+        lamport_time->index = 1 + msg_rec->stamp.index;
+    }
+    else
+    {
+        lamport_time->index = 1 + lamport_time->index;
+    }
+
+    /* Write to file */
+    fwrite(msg_rec, sizeof(serv_msg), 1, fd);
+    fclose(fd);
+    fd = fopen(User, "a");
+
+    /* Add to list of messages and handle */
+    lamp_struct_insert(messages, msg_rec);
+}
+
+void sendToClient(serv_msg * msg_buf)
+{
+    char client_group[MAX_GROUP_NAME];
+
+    printf("%s\n", msg_buf->payload);
+    /* Increment LTS */
+    lamport_time->index++;
+    msg_buf->stamp.index = lamport_time->index + 1;
+    msg_buf->stamp.server = proc_index;
+    /* Send to the client group */
+    sprintf(client_group, "%s-%s", msg_buf->room, User);
+    ret = SP_multicast(Mbox, SAFE_MESS, client_group, 2, sizeof(serv_msg), (char *) msg_buf);
+    checkError("Multicast");
+}
+
+void Read_message()
+{
+    static char in_mess[MAX_MESSLEN];
+    char sender[MAX_GROUP_NAME];
+    char target_groups[MAX_MEMBERS][MAX_GROUP_NAME];
+    int service_type = 0;
+    int endian_mismatch;
+    int16 mess_type;
+    membership_info memb_info;\
+    int num_groups;
+
+    serv_msg * msg_buf = malloc(sizeof(serv_msg));
+    if(msg_buf == 0)
+    {
+        perror("MALLOC HATES ME\n");
+        exit(1);
+    }
+
+    /* Receive messages */
+    ret = SP_receive( Mbox, &service_type, sender, MAX_MEMBERS, &num_groups, target_groups,
+                      &mess_type, &endian_mismatch, sizeof(serv_msg), (char *) msg_buf );
+    checkError("Receive");
+    ret = SP_get_memb_info( in_mess, service_type, &memb_info );
+
+    /* Handle the message */
+    handleMessage(msg_buf, sender, target_groups, service_type, num_groups);
+
 }
 
 void merge_messages()
