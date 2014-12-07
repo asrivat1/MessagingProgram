@@ -22,7 +22,7 @@ int main(){
     msg->payload[1] = '2';
     msg->payload[2] = '\0';
     strcpy(msg->username, trev_name);
-    room_insert_msg(r, msg);
+    assert(room_insert_msg(r, msg));
 
     msg = malloc(sizeof(serv_msg));
     msg->type = MSG;
@@ -32,7 +32,7 @@ int main(){
     msg->payload[1] = '1';
     msg->payload[2] = '\0';
     strcpy(msg->username, trev_name);
-    room_insert_msg(r, msg);
+    assert(room_insert_msg(r, msg));
 
     msg = malloc(sizeof(serv_msg));
     msg->type = MSG;
@@ -42,7 +42,7 @@ int main(){
     msg->payload[1] = '3';
     msg->payload[2] = '\0';
     strcpy(msg->username, trev_name);
-    room_insert_msg(r, msg);
+    assert(room_insert_msg(r, msg));
 
     assert(r->t_head->next->msg->stamp.index == 1);
     assert(r->t_head->next->next->msg->stamp.index == 5);
@@ -62,7 +62,7 @@ int main(){
     for(i = 0; i < sizeof(lts); i++)
         msg->payload[i] = c[i];
     strcpy(msg->username, trev_name);
-    room_insert_like(r, msg);
+    (room_insert_like(r, msg).change);
     assert(r->t_head->next->likes->num_likes == 1);
 
     /* Test Dummy Like */

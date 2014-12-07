@@ -34,7 +34,7 @@ room * room_init(char * name) {
     r->t_head = t_head;
     r->recent = t_head;
     r->size = 0;
-    r->users = malloc(sizeof(user));
+    r->users = calloc(1, sizeof(user));
     if(!r->users) {
         perror("MALLOC ERROR\n");
         exit(1);
@@ -50,11 +50,15 @@ int room_insert_msg(room * r, serv_msg * msg){
     ctext = r->t_head;
     short pass = 0;
     int change = 0;
-
+    /*Case where recent is in begining */
+    if(ctext == r->recent){
+        pass = 1;
+    }
     /*find correct spot */
     while(ctext->next != NULL && ltscomp(msg->stamp, ctext->next->msg->stamp) > 0) {
-        if(ctext == r->recent)
+        if(ctext == r->recent){
             pass = 1;
+        }
         ctext = ctext->next;
     }
     if(ctext->next && ltscomp(msg->stamp, ctext->next->msg->stamp) == 0) {
@@ -151,8 +155,10 @@ void print_room(room * r, int recent) {
         temp = r->recent->next;
     printf("Attendees: ");
     user * u = r->users->next; 
-    while(u)
+    while(u) {
         printf("%s, ", u->username);
+        u = u->next;
+    }
     printf("\n");
     printf("ROOM: %s \n", r->name);
     while(temp) {
