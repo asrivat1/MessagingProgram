@@ -153,15 +153,6 @@ void Read_message()
             return;
         }
 
-        /* Send message to client */
-        if(msg_buf->type != 4)
-        {
-            printf("%s\n", msg_buf->payload);
-            sprintf(client_group, "%s-%s", msg_buf->room, User);
-            ret = SP_multicast(Mbox, SAFE_MESS, client_group, 2, sizeof(serv_msg), (char *) msg_buf);
-            checkError("Multicast");
-        }
-
         /* If from another server */
         if(!strcmp(target_groups[0], server_group))
         {
@@ -275,11 +266,6 @@ void Read_message()
             fclose(fd);
             fd = fopen(User, "a");
 
-            /* Send message to other servers */
-            lamport_time->index++;
-            msg_buf->stamp.index = lamport_time->index + 1;
-            msg_buf->stamp.server = proc_index;
-
             /* Add to list of messages and handle */
             msg_rec = malloc(sizeof(serv_msg));
             if(!msg_rec)
@@ -302,6 +288,19 @@ void Read_message()
             }
 
             ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_buf);
+            checkError("Multicast");
+        }
+        /* Send message to client unless it's an LTS array */
+        if(msg_buf->type != 4)
+        {
+            printf("%s\n", msg_buf->payload);
+            /* Increment LTS */
+            lamport_time->index++;
+            msg_buf->stamp.index = lamport_time->index + 1;
+            msg_buf->stamp.server = proc_index;
+            /* Send to the client group */
+            sprintf(client_group, "%s-%s", msg_buf->room, User);
+            ret = SP_multicast(Mbox, SAFE_MESS, client_group, 2, sizeof(serv_msg), (char *) msg_buf);
             checkError("Multicast");
         }
     }
