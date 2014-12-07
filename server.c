@@ -40,6 +40,7 @@ void Read_message();
 void handle_message(serv_msg * msg);
 void merge_messages();
 void merge();
+void send_room(char * client_group, char * rm);
 void checkError(char * action);
 void clear_server(int server);
 void sendFakeMsg();
