@@ -12,13 +12,15 @@ void del_room(room * r);
 lts get_lts(room * r, int line_num);
 
 room * room_init(char * name) {
-    room * r = malloc(sizeof(room));
+    room * r;
+    r = malloc(sizeof(room));
     if(!r) {
         perror("MALLOC ERROR\n");
         exit(1);
     }
-    text * t_head = malloc(sizeof(text));
-    if(!t_head) {
+    text * t_head;
+    t_head = calloc(1, sizeof(text));
+    if(t_head == 0) {
         perror("MALLOC ERROR\n");
         exit(1);
     }
@@ -48,6 +50,7 @@ int room_insert_msg(room * r, serv_msg * msg){
     ctext = r->t_head;
     short pass = 0;
     int change = 0;
+
     /*find correct spot */
     while(ctext->next != NULL && ltscomp(msg->stamp, ctext->next->msg->stamp) > 0) {
         if(ctext == r->recent)
