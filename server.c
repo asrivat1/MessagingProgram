@@ -172,8 +172,6 @@ void Read_message()
             if((msg_buf->type != 4) && (abs(msg_buf->type) != 1)
                     && ltscomp(msg_buf->stamp, lamp_array(messages)[atoi(&sender[7])]) == 1)
             {
-                printf("Handling a like or text message\n");
-
                 /* Allocate new memory for storage */
                 msg_rec = malloc(sizeof(serv_msg));
                 if(msg_rec == 0)
@@ -303,7 +301,6 @@ void Read_message()
                 lamp_struct_insert(messages, msg_rec);
             }
 
-            printf("Sending to other servers\n");
             ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_buf);
             checkError("Multicast");
         }
