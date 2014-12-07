@@ -18,7 +18,7 @@ void lamp_struct_insert(lamp_struct * ls, serv_msg * msg){
 }
 
 lts * lamp_array(lamp_struct * ls){
-    lts * arr = malloc(sizeof(lts) * 5);
+    lts * arr = calloc(5, sizeof(lts));
     int i;
     for(i = 0; i < 5; i++) {
         arr[i].index = stack_look(ls->s_list[i]);

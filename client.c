@@ -271,6 +271,7 @@ void Read_message()
     int num_groups;
     int service_type = 0;
     int endian_mismatch;
+    int i;
     int16 mess_type;
     membership_info memb_info;
     change_mem c_m;
@@ -326,6 +327,13 @@ void Read_message()
         printf("\n");
         printf(">");
         fflush(0);
+    }
+    else if (Is_reg_memb_mess(service_type)) {
+        /*
+        if (!strcmp(sender, server_client)) {
+            for(i = 0; i < 
+        }
+        */
     }
 }
 
