@@ -467,6 +467,7 @@ void merge()
     {
         msg_send->type = 1;
         sprintf(msg_send->username, "%s", current->username);
+        sprintf(msg_send->room, "%s", current->room);
         for(i = 0; i < current->instances; i++)
         {
             ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_send);
