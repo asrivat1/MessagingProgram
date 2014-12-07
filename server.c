@@ -37,9 +37,11 @@ int prev_group_status[NUM_SERVERS];
 
 void handle_input(int argc, char *argv[]);
 void Read_message();
-void handle_message(serv_msg * msg);
+void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEMBERS][MAX_GROUP_NAME],
+        int service_type, int num_groups);
 void merge_messages();
 void merge();
+void sendToClient(serv_msg * msg_buf);
 void send_room(char * client_group, char * rm);
 void checkError(char * action);
 void clear_server(int server);
@@ -122,7 +124,6 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
     int i;
     lts payload_lts[NUM_SERVERS];
     char * ptr;
-    char client_group[MAX_GROUP_NAME];
 
     if( Is_regular_mess( service_type ) )
     {
@@ -275,15 +276,7 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
         /* Send message to client unless it's an LTS array */
         if(msg_buf->type != 4)
         {
-            printf("%s\n", msg_buf->payload);
-            /* Increment LTS */
-            lamport_time->index++;
-            msg_buf->stamp.index = lamport_time->index + 1;
-            msg_buf->stamp.server = proc_index;
-            /* Send to the client group */
-            sprintf(client_group, "%s-%s", msg_buf->room, User);
-            ret = SP_multicast(Mbox, SAFE_MESS, client_group, 2, sizeof(serv_msg), (char *) msg_buf);
-            checkError("Multicast");
+            sendToClient(msg_buf);
         }
     }
     else if( Is_reg_memb_mess(service_type))
@@ -329,6 +322,21 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
             }
         }
     }
+}
+
+void sendToClient(serv_msg * msg_buf)
+{
+    char client_group[MAX_GROUP_NAME];
+
+    printf("%s\n", msg_buf->payload);
+    /* Increment LTS */
+    lamport_time->index++;
+    msg_buf->stamp.index = lamport_time->index + 1;
+    msg_buf->stamp.server = proc_index;
+    /* Send to the client group */
+    sprintf(client_group, "%s-%s", msg_buf->room, User);
+    ret = SP_multicast(Mbox, SAFE_MESS, client_group, 2, sizeof(serv_msg), (char *) msg_buf);
+    checkError("Multicast");
 }
 
 void Read_message()
