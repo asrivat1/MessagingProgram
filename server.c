@@ -101,7 +101,22 @@ int main(int argc, char *argv[])
     test_timeout.sec = 5;
     test_timeout.usec = 0;
 
-    /* TODO read from file */
+    fd = fopen(User, "r");
+    serv_msg * read_buf = malloc(sizeof(serv_msg));
+    size_t s = 1;
+    while(s == 1)
+    {
+        s = (fd != 0) ? fread(read_buf, sizeof(serv_msg), 1, fd) : 0;
+        if(s == 1)
+        {
+            storeMessage(read_buf);
+            room_list_update(rooms, read_buf);
+            read_buf = malloc(sizeof(serv_msg));
+        }
+    }
+    if(fd != 0)
+        fclose(fd);
+    
 
     /* Connect and join various groups */
 	ret = SP_connect_timeout( spread_name, User, 0, 1, &Mbox, Private_group, test_timeout );
@@ -137,17 +152,30 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
             return;
         }
 
+        msg_rec = malloc(sizeof(serv_msg));
+        if(!msg_rec)
+        {
+            perror("MALLOC NOT WORKING\n");
+            exit(1);
+        }
+        memcpy(msg_rec, msg_buf, sizeof(serv_msg));
+
         /* If from another server */
         if(!strcmp(target_groups[0], server_group))
         {
             /* Put it in the room */
-            room_list_update(rooms, msg_buf);
+            room_list_update(rooms, msg_rec);
 
             /* If it's not a server only message and we don't already have it */
             if((msg_buf->type != 4) && (abs(msg_buf->type) != 1)
                     && ltscomp(msg_buf->stamp, lamp_array(messages)[atoi(&sender[7])]) == 1)
             {
                 storeMessage(msg_buf);
+
+                /* Write to file */
+                fd = fopen(User, "a");
+                fwrite(msg_rec, sizeof(serv_msg), 1, fd);
+                fclose(fd);
             }
 
             /* Handle join/leave messages */
@@ -220,18 +248,10 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
         else
         {
             /* Write to file */
+            fd = fopen(User, "a");
             fwrite(msg_buf, sizeof(serv_msg), 1, fd);
             fclose(fd);
-            fd = fopen(User, "a");
 
-            /* Add to list of messages and handle */
-            msg_rec = malloc(sizeof(serv_msg));
-            if(!msg_rec)
-            {
-                perror("MALLOC NOT WORKING\n");
-                exit(1);
-            }
-            memcpy(msg_rec, msg_buf, sizeof(serv_msg));
             room_list_update(rooms, msg_rec);
 
             /* If it's a join, send all info */
@@ -319,11 +339,6 @@ void storeMessage(serv_msg * msg_buf)
     {
         lamport_time->index = 1 + lamport_time->index;
     }
-
-    /* Write to file */
-    fwrite(msg_rec, sizeof(serv_msg), 1, fd);
-    fclose(fd);
-    fd = fopen(User, "a");
 
     /* Add to list of messages and handle */
     lamp_struct_insert(messages, msg_rec);
@@ -465,9 +480,6 @@ void handle_input(int argc, char * argv[]) {
     sscanf(argv[1], "%d", &proc_index);
     User[6] = proc_index + 48;
     printf("I am %s\n", User);
-
-    /*Set up file */
-    fd = fopen(User, "a");
 }
 
 void clear_server(int server)
@@ -514,6 +526,7 @@ void send_room(char * client_group, char * rm) {
     l_node * l;
     while(t) {
         /*SEND t->msg */
+        printf("Sending an old message to client\n");
         ret = SP_multicast(Mbox, SAFE_MESS, client_group, 2, sizeof(serv_msg), (char *) t->msg);
         checkError("Multicast");
         l = t->likes->sentinal->next;
@@ -527,13 +540,14 @@ void send_room(char * client_group, char * rm) {
     }
     /* Send attendee info */ 
     user * curr_user = r->users;
-    while(curr_user)
+    while(curr_user != 0)
     {
         /* Send a join for that user */
         strcpy(send_msg->username, curr_user->username);
         strcpy(send_msg->room, rm);
         for(i = 0; i < curr_user->instances; i++)
         {
+            printf("Sending %s\n", curr_user->username);
             ret = SP_multicast(Mbox, SAFE_MESS, client_group, 2, sizeof(serv_msg), (char *) send_msg);
             checkError("Multicast");
         }
