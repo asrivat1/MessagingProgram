@@ -65,7 +65,16 @@ int main(int argc, char *argv[])
     /* Connect and join various groups */
 	ret = SP_connect_timeout( spread_name, User, 0, 1, &Mbox, Private_group, test_timeout );
     checkError("Connect");
-
+    printf("Welcome to Swagchat\n");
+    printf("u X to login with username X \n");
+    printf("c X to connect to server X \n");
+    printf("j X to join room X \n");
+    printf("a X to append msg X \n");
+    printf("l X to like line X \n");
+    printf("r X to remove like from line X \n");
+    printf("h to print history \n");
+    printf("v to view which chat servers are connected\n");
+    printf("q to quit \n");
     printf(">");
 
     /* Set up E - DO NOT MOVE */
@@ -223,7 +232,11 @@ void Read_input()
             break;
         /* View other servers */
         case 'v':
-            /*TODO*/
+            break;
+        case 'q':
+            del_room(m_room); 
+            free(msg_send); 
+            free(msg_rec);
             break;
     }
     printf(">");
