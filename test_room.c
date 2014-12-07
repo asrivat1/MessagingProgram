@@ -82,8 +82,25 @@ int main(){
     for(i = 0; i < sizeof(lts); i++)
         msg->payload[i] = c[i];
     strcpy(msg->username, trev_name);
-    (room_insert_like(r, msg).change);
+    assert(room_insert_like(r, msg).change);
     assert(r->t_head->next->likes->num_likes == 1);
+    assert(r->t_head->next->msg != DUMMY);
+
+    printf("Testing Regular Like V2\n");
+    msg = malloc(sizeof(serv_msg));
+    msg->type = LIKE;
+    msg->stamp.server = 5;
+    msg->stamp.index = 2;
+    lamp;
+    lamp.server = 0;
+    lamp.index = 5;
+    c = (char *) &lamp;
+    for(i = 0; i < sizeof(lts); i++)
+        msg->payload[i] = c[i];
+    strcpy(msg->username, trev_name);
+    assert(room_insert_like(r, msg).change);
+    assert(r->t_head->next->next->next->likes->num_likes == 1);
+    assert(r->t_head->next->next->next->msg != DUMMY);
 
     /* Test Dummy Like */
     printf("Testing Dummy Like\n");

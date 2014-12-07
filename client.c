@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
     /* Connect and join various groups */
 	ret = SP_connect_timeout( spread_name, User, 0, 1, &Mbox, Private_group, test_timeout );
     checkError("Connect");
-    printf("Welcome to Swagchat\n");
+    printf("\nWelcome to Swagchat\n");
     printf("u X to login with username X \n");
     printf("c X to connect to server X \n");
     printf("j X to join room X \n");
@@ -117,6 +117,7 @@ void Read_input()
                 del_room(m_room);
                 m_room = NULL;
                 in_room = 0;
+                SP_leave(Mbox, server_room_group);
             } 
             for(i = 0; i < sizeof(username); i++)
                 username[i] = 0;
@@ -138,7 +139,8 @@ void Read_input()
                     /*Delete room data structure */
                     del_room(m_room);
                     m_room = NULL;
-
+                    SP_leave(Mbox, server_room_group);
+                    in_room = 0;
                 }
                 /*Leave Server*/
                 SP_leave(Mbox, server_client);
@@ -169,6 +171,7 @@ void Read_input()
                 /*Delete room data Structure */
                 del_room(m_room);
                 printf("Leaving %s. \n", chatroom);
+                SP_leave(Mbox, server_room_group);
             }
             sprintf(r_name, "%s", command + 2);
             m_room = room_init(r_name);
@@ -204,6 +207,7 @@ void Read_input()
                 break;
             }
             like_lts = get_lts(m_room, atoi(command + 2));
+            /*Make sure it is a valid msg */
             if(like_lts.server != -1 && like_lts.index != -1) {
                 memcpy(msg_send->payload, &like_lts, sizeof(lts));
                 sprintf(msg_send->username, "%s", username);
@@ -230,6 +234,9 @@ void Read_input()
                 msg_send->type = UNLIKE;
                 ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_send);
             }
+            else {
+                printf("Not a valid line number.\n");
+            }
             break;
         /* View full history */
         case 'h':
@@ -242,6 +249,7 @@ void Read_input()
             break;
         /* View other servers */
         case 'v':
+            printf("We haven't implemented this yet \n");
             break;
         case 'q':
             if(m_room)
@@ -289,8 +297,6 @@ void Read_message()
             memcpy(temp, msg_rec, sizeof(serv_msg)); 
             if(room_insert_msg(m_room, temp)) {
                 printf("NEW RECENT MSG\n");
-                printf("\n");
-                print_room(m_room, 1);
             }
             else
                 printf("OLD MSG, DONT DISPLAY \n");
@@ -302,8 +308,6 @@ void Read_message()
             c_m = room_insert_like(m_room, temp);
             if(c_m.change){
                 printf("Fresh like \n");
-                printf("\n");
-                print_room(m_room, 1);
             }
             else
                 printf("Old Like \n");
@@ -315,9 +319,10 @@ void Read_message()
         else if(msg_rec->type == JOIN || msg_rec->type == LEAVE) {
             printf("Got a Join/Leave \n");
             room_update_user(m_room, msg_rec);
-            printf("\n");
-            print_room(m_room, 1);
         }
+
+        printf("\n");
+        print_room(m_room, 1);
         printf("\n");
         printf(">");
         fflush(0);

@@ -8,9 +8,9 @@ void user_leave(user * u, serv_msg * joined);
 
 void user_join(user * u, serv_msg * joined)
 {
-    if(u->next == 0)
+    if(u->next == NULL)
     {
-        u->next = malloc(sizeof(user));
+        u->next = calloc(1, sizeof(user));
         sprintf(u->next->username, "%s", joined->username);
         sprintf(u->next->room, "%s", joined->room);
         u->next->instances = 1;
@@ -35,7 +35,7 @@ void user_join(user * u, serv_msg * joined)
     }
 
     /* We didn't find it */
-    current->next = malloc(sizeof(user));
+    current->next = calloc(1, sizeof(user));
     sprintf(current->next->username, "%s", joined->username);
     sprintf(current->next->room, "%s", joined->room);
     current->next->instances = 1;
@@ -50,8 +50,8 @@ void user_leave(user * u, serv_msg * joined)
     while(current->next != 0)
     {
         /* If we find that user */
-        if(!strcmp(current->next->username, joined->username) &&
-           !strcmp(current->next->room, joined->room) )
+        if(strcmp(current->next->username, joined->username) == 0 &&
+           strcmp(current->next->room, joined->room) == 0 )
         {
             /* Remove the user if no instances */
             if(--current->next->instances == 0)
