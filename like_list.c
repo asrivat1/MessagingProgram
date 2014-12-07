@@ -8,8 +8,8 @@ change_mem like_list_update(like_list * ll, serv_msg * msg);
 void del_like_list(like_list *ll);
 
 like_list * like_list_init(){
-    like_list * l = malloc(sizeof(like_list));
-    l_node * sentinal = malloc(sizeof(l_node));
+    like_list * l = calloc(1, sizeof(like_list));
+    l_node * sentinal = calloc(1, sizeof(l_node));
     sentinal->next = NULL;
     sentinal->msg = NULL;
     l->sentinal = sentinal;
@@ -46,7 +46,7 @@ change_mem like_list_update(like_list * ll, serv_msg * msg){
     }
     else {
         /* Otherwise make new entry */
-        nelement = malloc(sizeof(l_node));
+        nelement = calloc(1, sizeof(l_node));
         nelement->msg = msg;
         nelement->next = telement->next;
         telement->next = nelement;

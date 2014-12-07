@@ -123,7 +123,7 @@ change_mem room_insert_like(room * r, serv_msg * msg){
         ctext = ctext->next;
     }
     /* msg is in structure-update like list */
-    if(ctext->next && ltscomp(*liked_stamp, ctext->next->msg->stamp) == 0) {
+    if(ctext->next != NULL && ltscomp(*liked_stamp, ctext->next->msg->stamp) == 0) {
             change = like_list_update(ctext->next->likes, msg);
             if(change.change && pass)
                 change.change = 1;
@@ -132,7 +132,8 @@ change_mem room_insert_like(room * r, serv_msg * msg){
     }
     /* like has arrived before msg, make dummy msg */
     else {
-        ntext = malloc(sizeof(text));
+        printf("MAKING DUMMY NODE \n");
+        ntext = calloc(1, sizeof(text));
         if(!ntext) {
             perror("MALLOC ERROR\n");
             exit(1);
@@ -162,7 +163,8 @@ void print_room(room * r, int recent) {
     printf("Attendees: ");
     user * u = r->users->next; 
     while(u) {
-        printf("%s, ", u->username);
+        if(u->username[0] != 0)
+            printf("%s, ", u->username);
         u = u->next;
     }
     printf("\n");
@@ -216,7 +218,7 @@ lts get_lts(room * r, int line_num) {
     text * curr = r->recent->next;
     int i = 0;
     while(curr != NULL) {
-        if(++i == line_num)
+        if(curr->msg->type != DUMMY && ++i == line_num)
             return curr->msg->stamp;
         curr = curr->next;
     }
