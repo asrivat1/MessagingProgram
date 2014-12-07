@@ -175,7 +175,7 @@ void Read_message()
                 case 4:
                     num_lts++;
                     /* Retreive the array of LTS */
-                    ptr = payload_lts;
+                    ptr = (char *) payload_lts;
                     for(i = 0; i < sizeof(lts) * NUM_SERVERS; i++)
                     {
                         ptr[i] = msg_buf->payload[i];
@@ -333,7 +333,7 @@ void merge()
 
     /* Send my LTS for each server */
     server_lts = lamp_array(messages);
-    char * ptr = server_lts;
+    char * ptr = (char *) server_lts;
     for(i = 0; i < sizeof(lts) * NUM_SERVERS; i++)
     {
         msg_send->payload[i] = ptr[i];
