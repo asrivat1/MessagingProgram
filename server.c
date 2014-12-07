@@ -30,7 +30,7 @@ lts * max[NUM_SERVERS];
 int max_sender[NUM_SERVERS];
 lts * min[NUM_SERVERS];
 int num_merged = 0;
-int num_lts = 1;
+int num_lts = 0;
 
 int group_status[NUM_SERVERS];
 int prev_group_status[NUM_SERVERS];
@@ -110,8 +110,15 @@ int main(int argc, char *argv[])
         if(s == 1)
         {
             storeMessage(read_buf);
+            printf("Reading msg from Server%d Index%d\n", read_buf->stamp.server, read_buf->stamp.index);
+            printf("%s\n", read_buf->payload);
             room_list_update(rooms, read_buf);
             read_buf = malloc(sizeof(serv_msg));
+            if(!read_buf)
+            {
+                perror("Error with malloc\n");
+                exit(1);
+            }
         }
     }
     if(fd != 0)
@@ -139,17 +146,22 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
 {
     int i;
     lts payload_lts[NUM_SERVERS];
-    char * ptr;
 
     if( Is_regular_mess( service_type ) )
     {
         printf("\nGot a regular message sent to %s of type %d\n", target_groups[0], msg_buf->type);
 
-        /* Ignore if from self */
-        if(!strcmp(sender, Private_group))
+        /* Ignore if from self unless LTS array */
+        if(!strcmp(sender, Private_group) && msg_buf->type != 4)
         {
             printf("It was from myself\n");
             return;
+        }
+
+        /* Send message to client unless it's an LTS array */
+        if(msg_buf->type != 4)
+        {
+            sendToClient(msg_buf);
         }
 
         msg_rec = malloc(sizeof(serv_msg));
@@ -196,14 +208,11 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
                 case 4:
                     num_lts++;
                     /* Retreive the array of LTS */
-                    ptr = (char *) payload_lts;
-                    for(i = 0; i < sizeof(lts) * NUM_SERVERS; i++)
-                    {
-                        ptr[i] = msg_buf->payload[i];
-                    }
+                    memcpy(payload_lts, msg_buf->payload, sizeof(lts) * 5);
                     /* See if this is has a max or min */
                     for(i = 0; i < NUM_SERVERS; i++)
                     {
+                        printf("Server%d, Index%d\n", payload_lts[i].server, payload_lts[i].index);
                         if(max[i] == 0 || ltscomp(payload_lts[i], *max[i]) == 1
                                 || (ltscomp(payload_lts[i], *max[i]) == 0 && atoi(&sender[7]) < max_sender[i]))
                         {
@@ -218,6 +227,7 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
                             }
                             max[i]->server = payload_lts[i].server;
                             max[i]->index = payload_lts[i].index;
+                            printf("Updating max sender to %d\n", atoi(&sender[7]));
                             max_sender[i] = atoi(&sender[7]);
                         }
                         else if(min[i] == 0 || ltscomp(payload_lts[i], *min[i]) == -1)
@@ -238,7 +248,7 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
                     /* If I have info from all servers, send messages */
                     if(num_merged == num_lts)
                     {
-                        num_lts = 1;
+                        num_lts = 0;
                         merge_messages();
                     }
                     break;
@@ -267,11 +277,6 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
 
             ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_buf);
             checkError("Multicast");
-        }
-        /* Send message to client unless it's an LTS array */
-        if(msg_buf->type != 4)
-        {
-            sendToClient(msg_buf);
         }
     }
     else if( Is_reg_memb_mess(service_type))
@@ -404,8 +409,10 @@ void merge_messages()
     for(i = 0; i < NUM_SERVERS; i++)
     {
         /* If I have the max LTS for that server */
+        printf("Max sender is %d\n", max_sender[i]);
         if(max_sender[i] == proc_index)
         {
+            printf("I have max for Server%d\n", i);
             /* Send everything from min to max */
             for(j = 0; j < messages->s_list[i]->size; i++)
             {
