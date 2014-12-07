@@ -110,6 +110,12 @@ change_mem room_insert_like(room * r, serv_msg * msg){
     change.change = 0; 
     change.msg = NULL;
     ctext = r->t_head;
+
+    /*Case where recent is in begining */
+    if(ctext == r->recent){
+        pass = 1;
+    }
+
     /*find correct spot */
     while(ctext->next != NULL && ltscomp(*liked_stamp, ctext->next->msg->stamp) > 0) {
         if(ctext == r->recent)
@@ -162,8 +168,10 @@ void print_room(room * r, int recent) {
     printf("\n");
     printf("ROOM: %s \n", r->name);
     while(temp) {
-        if(temp->msg->type == DUMMY)
+        if(temp->msg->type == DUMMY){
+            temp = temp->next;
             continue;
+        }
         printf("%2d. %s: %-80s \t Likes: %d\n", ++i, temp->msg->username, 
                temp->msg->payload, temp->likes->num_likes);
         temp = temp->next;
