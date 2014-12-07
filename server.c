@@ -128,6 +128,7 @@ void Read_message()
     int i;
     lts payload_lts[NUM_SERVERS];
     char * ptr;
+
     serv_msg * msg_buf = malloc(sizeof(serv_msg));
     if(msg_buf == 0)
     {
@@ -201,12 +202,14 @@ void Read_message()
             {
                 /* Join */
                 case 1:
+                    printf("New user %s\n", msg_buf->username);
                     /* Upon first joining a room, we must send the history */
                     user_join(users[atoi(&sender[7])], msg_buf);
                     send_room(sender, msg_buf->room);
                     break;
                 /* Leave */
                 case -1:
+                    printf("User %s has left\n", msg_buf->username);
                     user_leave(users[atoi(&sender[7])], msg_buf);
                     break;
                 /* Merge */
@@ -385,8 +388,6 @@ void merge()
         perror("MALLOC HATES ME\n");
         exit(1);
     }
-
-    printf("Address of msg_send: %p\n", msg_send);
 
     /* Clear previous max/min */
     for(i = 0; i < NUM_SERVERS; i++)
