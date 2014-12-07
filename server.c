@@ -417,10 +417,11 @@ void merge_messages()
             /* Send everything from min to max */
             for(j = 0; j < messages->s_list[i]->size; j++)
             {
-                if(min != 0 && (ltscomp(messages->s_list[i]->arr[j]->stamp, *min[i]) == 0
+                if(min[i] != 0 && (ltscomp(messages->s_list[i]->arr[j]->stamp, *min[i]) == 0
                         || ltscomp(messages->s_list[i]->arr[j]->stamp, *min[i]) == 1))
                 {
-                    msg_send = messages->s_list[i]->arr[j];
+                    memcpy(msg_send, messages->s_list[i]->arr[j], sizeof(serv_msg));
+                    printf("Sending %s\n", msg_send->payload);
                     ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_send);
                     checkError("Multicast");
                 }
