@@ -175,7 +175,6 @@ void del_room(room * r) {
     text * curr = r->t_head;
     text * temp;
     user * a, * b;
-    int i = 0;
     while(curr != 0) {
         if(curr->msg != 0) {
             free(curr->msg);

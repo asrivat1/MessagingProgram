@@ -157,9 +157,8 @@ void Read_message()
         if(msg_buf->type != 4)
         {
             printf("%s\n", msg_buf->payload);
-            sprintf(client_group, "%s-%s", msg_rec->room, User);
-            printf("Sending message to %s\n", client_group);
-            ret = SP_multicast(Mbox, SAFE_MESS, client_group, 2, sizeof(serv_msg), (char *) msg_rec);
+            sprintf(client_group, "%s-%s", msg_buf->room, User);
+            ret = SP_multicast(Mbox, SAFE_MESS, client_group, 2, sizeof(serv_msg), (char *) msg_buf);
             checkError("Multicast");
         }
 
@@ -212,7 +211,6 @@ void Read_message()
                     printf("\nNew user %s\n", msg_buf->username);
                     /* Upon first joining a room, we must send the history */
                     user_join(users[atoi(&sender[7])], msg_buf);
-                    send_room(sender, msg_buf->room);
                     break;
                 /* Leave */
                 case -1:
@@ -221,7 +219,6 @@ void Read_message()
                     break;
                 /* Merge */
                 case 4:
-                    printf("\nGot an LTS array from %d\n", atoi(&sender[7]));
                     num_lts++;
                     /* Retreive the array of LTS */
                     ptr = (char *) payload_lts;
@@ -270,24 +267,20 @@ void Read_message()
                         merge_messages();
                     }
                     break;
-                /* Otherwise */
-                default:
-                    /* Insert into chatroom */
-                    break;
             }
         }
         /* Otherwise it's from client */
         else
         {
-            /* Send message to other servers */
-            lamport_time->index++;
-            msg_buf->stamp.index = lamport_time->index + 1;
-            msg_buf->stamp.server = proc_index;
-
             /* Write to file */
             fwrite(msg_buf, sizeof(serv_msg), 1, fd);
             fclose(fd);
             fd = fopen(User, "a");
+
+            /* Send message to other servers */
+            lamport_time->index++;
+            msg_buf->stamp.index = lamport_time->index + 1;
+            msg_buf->stamp.server = proc_index;
 
             /* Add to list of messages and handle */
             msg_rec = malloc(sizeof(serv_msg));
@@ -297,10 +290,20 @@ void Read_message()
                 exit(1);
             }
             memcpy(msg_rec, msg_buf, sizeof(serv_msg));
-            lamp_struct_insert(messages, msg_rec);
             room_list_update(rooms, msg_rec);
 
-            printf("Sending message to %s\n", server_group);
+            /* If it's a join, send all info */
+            if(msg_buf->type == 1)
+            {
+                send_room(sender, msg_buf->room);
+            }
+            /* Otherwise hold onto it */
+            else
+            {
+                lamp_struct_insert(messages, msg_rec);
+            }
+
+            printf("Sending to other servers\n");
             ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_buf);
             checkError("Multicast");
         }
@@ -514,6 +517,7 @@ void send_room(char * client_group, char * rm) {
             ret = SP_multicast(Mbox, SAFE_MESS, client_group, 2, sizeof(serv_msg), (char *) send_msg);
             checkError("Multicast");
         }
+        curr_user = curr_user->next;
     }
 }
 
