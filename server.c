@@ -155,9 +155,7 @@ void Read_message()
         if(!strcmp(target_groups[0], server_group))
         {
             /* Put it in the room */
-            printf("About to room_list_update\n");
             room_list_update(rooms, msg_buf);
-            printf("Finished room_list_update\n");
 
             /* If it's not a server only message and we don't already have it */
             if((msg_buf->type != 4) && (abs(msg_buf->type) != 1)
@@ -386,6 +384,8 @@ void merge()
         perror("MALLOC HATES ME\n");
         exit(1);
     }
+
+    printf("Address of msg_send: %p\n", msg_send);
 
     /* Clear previous max/min */
     for(i = 0; i < NUM_SERVERS; i++)

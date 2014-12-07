@@ -12,7 +12,6 @@ void del_room(room * r);
 lts get_lts(room * r, int line_num);
 
 room * room_init(char * name) {
-    printf("Beginning room_init\n");
     room * r;
     r = malloc(sizeof(room));
     if(!r) {
@@ -20,23 +19,17 @@ room * room_init(char * name) {
         exit(1);
     }
     text * t_head;
-    printf("About to malloc t_head\n");
-    fflush(stdout);
     t_head = calloc(1, sizeof(text));
-    printf("Done with malloc of t_head\n");
-    fflush(stdout);
     if(t_head == 0) {
         perror("MALLOC ERROR\n");
         exit(1);
     }
-    printf("About to set t_head->next = NULL\n");
     t_head->next = NULL;
     r->name = malloc(sizeof(char) * 30);
     if(!r->name) {
         perror("MALLOC ERROR\n");
         exit(1);
     }
-    printf("About to strncpy\n");
     strncpy(r->name, name, 30);
     r->t_head = t_head;
     r->recent = t_head;
@@ -48,7 +41,6 @@ room * room_init(char * name) {
     }
     r->users->next = NULL;
     r->users->instances = 0;
-    printf("Done with room_init\n");
     return r; 
 }
 
