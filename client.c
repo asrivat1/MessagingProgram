@@ -36,6 +36,7 @@ int in_room = 0;
 int con_server = 0;
 room * m_room;
 char r_name[30];
+char server_client[14];
 
 int group_status[NUM_SERVERS];
 int prev_group_status[NUM_SERVERS];
@@ -92,7 +93,6 @@ void Read_input()
 {
     int i;
     char command[80];
-    char server_client[14];
 
     for(i = 0; i < sizeof(command); i++)
         command[i] = 0;
@@ -302,7 +302,7 @@ void Read_message()
             int j;
             printf("Servers in View \n");
             for(j = 0; j < 5; j++ ){
-                if(msg_rec->payload[j] == '1'); 
+                if(msg_rec->payload[j] == '1')
                     printf("Server_%d\n", j);
             }
         }
@@ -345,11 +345,36 @@ void Read_message()
         fflush(0);
     }
     else if (Is_reg_memb_mess(service_type)) {
-        /*
         if (!strcmp(sender, server_client)) {
-            for(i = 0; i < 
+
+            int serverConnected = 0;
+            for(i = 0; i < num_groups; i ++)
+            {
+                if(target_groups[i][1] == 'S')
+                {
+                    serverConnected = 1;
+                }
+            }
+            if(!serverConnected)
+            {
+
+                printf("YOLO3\n");
+                sprintf(msg_send->username, "%s", username);
+                sprintf(msg_send->room, "%s", chatroom);
+                msg_send->type = LEAVE;
+                ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_send);
+                printf("The server died \n")
+                /*Delete room data structure */
+                printf("Logged out. \n");
+                del_room(m_room);
+                m_room = NULL;
+                in_room = 0;
+                SP_leave(Mbox, server_room_group);
+                SP_leave(Mbox, server_client);
+                con_server = 0;
+
+            }
         }
-        */
     }
 }
 
