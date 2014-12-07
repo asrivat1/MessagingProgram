@@ -40,6 +40,7 @@ void Read_message();
 void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEMBERS][MAX_GROUP_NAME],
         int service_type, int num_groups);
 void merge_messages();
+void storeMessage(serv_msg * msg_buf);
 void merge();
 void sendToClient(serv_msg * msg_buf);
 void send_room(char * client_group, char * rm);
@@ -146,33 +147,7 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
             if((msg_buf->type != 4) && (abs(msg_buf->type) != 1)
                     && ltscomp(msg_buf->stamp, lamp_array(messages)[atoi(&sender[7])]) == 1)
             {
-                /* Allocate new memory for storage */
-                msg_rec = malloc(sizeof(serv_msg));
-                if(msg_rec == 0)
-                {
-                    perror("MALLOC HATES ME\n");
-                    exit(1);
-                }
-                memcpy(msg_rec, msg_buf, sizeof(serv_msg));
-
-                /* Increment LTS */
-                if( ltscomp(msg_rec->stamp, *lamport_time) == 1 )
-                {
-                    lamport_time->index = 1 + msg_rec->stamp.index;
-                }
-                else
-                {
-                    lamport_time->index = 1 + lamport_time->index;
-                }
-
-                /* Write to file */
-                fwrite(msg_rec, sizeof(serv_msg), 1, fd);
-                fclose(fd);
-                fd = fopen(User, "a");
-
-                /* Add to list of messages and handle */
-                lamp_struct_insert(messages, msg_rec);
-
+                storeMessage(msg_buf);
             }
 
             /* Handle join/leave messages */
@@ -322,6 +297,36 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
             }
         }
     }
+}
+
+void storeMessage(serv_msg * msg_buf)
+{
+    /* Allocate new memory for storage */
+    msg_rec = malloc(sizeof(serv_msg));
+    if(msg_rec == 0)
+    {
+        perror("MALLOC HATES ME\n");
+        exit(1);
+    }
+    memcpy(msg_rec, msg_buf, sizeof(serv_msg));
+
+    /* Increment LTS */
+    if( ltscomp(msg_rec->stamp, *lamport_time) == 1 )
+    {
+        lamport_time->index = 1 + msg_rec->stamp.index;
+    }
+    else
+    {
+        lamport_time->index = 1 + lamport_time->index;
+    }
+
+    /* Write to file */
+    fwrite(msg_rec, sizeof(serv_msg), 1, fd);
+    fclose(fd);
+    fd = fopen(User, "a");
+
+    /* Add to list of messages and handle */
+    lamp_struct_insert(messages, msg_rec);
 }
 
 void sendToClient(serv_msg * msg_buf)
