@@ -44,9 +44,29 @@ int main(){
     strcpy(msg->username, trev_name);
     assert(room_insert_msg(r, msg));
 
+    msg = malloc(sizeof(serv_msg));
+    msg->type = MSG;
+    msg->stamp.server = 0;
+    msg->stamp.index = 11;
+    msg->payload[0] = 'p';
+    msg->payload[1] = '3';
+    msg->payload[2] = '\0';
+    strcpy(msg->username, trev_name);
+    assert(room_insert_msg(r, msg));
+
+    msg = malloc(sizeof(serv_msg));
+    msg->type = MSG;
+    msg->stamp.server = 0;
+    msg->stamp.index = 4;
+    msg->payload[0] = 'p';
+    msg->payload[1] = '3';
+    msg->payload[2] = '\0';
+    strcpy(msg->username, trev_name);
+    assert(room_insert_msg(r, msg));
+
     assert(r->t_head->next->msg->stamp.index == 1);
-    assert(r->t_head->next->next->msg->stamp.index == 5);
-    assert(r->t_head->next->next->next->msg->stamp.index == 10);
+    assert(r->t_head->next->next->msg->stamp.index == 4);
+    assert(r->t_head->next->next->next->msg->stamp.index == 5);
 
     /* Test Regular Like */
     printf("Testing Regular Like\n");

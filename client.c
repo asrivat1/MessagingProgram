@@ -277,45 +277,50 @@ void Read_message()
     {
         printf("Got a regular message\n");
 
-        /* If about my room */
-        if(in_room != 0 && !strcmp(target_groups[0], server_room_group))
-        {
-            printf("Pertinent MSG\n");
-            printf("SERVER: %d, IDEX: %d\n", msg_rec->stamp.server, msg_rec->stamp.index);
-            printf("%d \n", msg_rec->type);
-            /* Handle message */
-            if(msg_rec->type == MSG) {
-                temp = malloc(sizeof(serv_msg));
-                memcpy(temp, msg_rec, sizeof(serv_msg)); 
-                if(room_insert_msg(m_room, msg_rec)) {
-                    printf("NEW RECENT MSG\n");
-                    printf("\n");
-                    print_room(m_room, 1);
-                }
-                else
-                    printf("OLD MSG, DONT DISPLAY \n");
-            }
-            else if(msg_rec->type == LIKE || msg_rec->type == UNLIKE) {
-                temp = malloc(sizeof(serv_msg));
-                memcpy(temp, msg_rec, sizeof(serv_msg)); 
-                c_m = room_insert_like(m_room, msg_rec);
-                if(c_m.change){
-                    printf("\n");
-                    print_room(m_room, 1);
-                }
-                if(c_m.msg != NULL) {
-                    free(c_m.msg);
-                }
-            }
-            else if(msg_rec->type == JOIN || msg_rec->type == LEAVE) {
-                room_update_user(m_room, msg_rec);
+        /* If about my room 
+        if(in_room != 0 && !strcmp(target_groups[0], server_room_group)) 
+        */
+        printf("SERVER: %d, IDEX: %d\n", msg_rec->stamp.server, msg_rec->stamp.index);
+        printf("%d \n", msg_rec->type);
+        /* Handle message */
+        if(msg_rec->type == MSG) {
+            printf("Got a msg\n");
+            temp = malloc(sizeof(serv_msg));
+            memcpy(temp, msg_rec, sizeof(serv_msg)); 
+            if(room_insert_msg(m_room, temp)) {
+                printf("NEW RECENT MSG\n");
                 printf("\n");
                 print_room(m_room, 1);
             }
-            printf("\n");
-            printf(">");
-            fflush(0);
+            else
+                printf("OLD MSG, DONT DISPLAY \n");
         }
+        else if(msg_rec->type == LIKE || msg_rec->type == UNLIKE) {
+            printf("Got a like\n");
+            temp = malloc(sizeof(serv_msg));
+            memcpy(temp, msg_rec, sizeof(serv_msg)); 
+            c_m = room_insert_like(m_room, temp);
+            if(c_m.change){
+                printf("Fresh like \n");
+                printf("\n");
+                print_room(m_room, 1);
+            }
+            else
+                printf("Old Like \n");
+            if(c_m.msg != NULL) {
+                printf("FREEING MSG \n");
+                free(c_m.msg);
+            }
+        }
+        else if(msg_rec->type == JOIN || msg_rec->type == LEAVE) {
+            printf("Got a Join/Leave \n");
+            room_update_user(m_room, msg_rec);
+            printf("\n");
+            print_room(m_room, 1);
+        }
+        printf("\n");
+        printf(">");
+        fflush(0);
     }
 }
 
