@@ -257,10 +257,14 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
         /* Otherwise it's from client */
         else
         {
-            /* Write to file */
-            fd = fopen(User, "a");
-            fwrite(msg_buf, sizeof(serv_msg), 1, fd);
-            fclose(fd);
+            if(abs(msg_buf->type) != 1)
+            {
+                /* Write to file */
+                fd = fopen(User, "a");
+                fwrite(msg_buf, sizeof(serv_msg), 1, fd);
+                fclose(fd);
+                lamp_struct_insert(messages, msg_rec);
+            }
 
             room_list_update(rooms, msg_rec);
 
@@ -268,11 +272,6 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
             if(msg_buf->type == 1)
             {
                 send_room(sender, msg_buf->room);
-            }
-            /* Otherwise hold onto it */
-            else
-            {
-                lamp_struct_insert(messages, msg_rec);
             }
 
             ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_buf);
@@ -356,7 +355,7 @@ void sendToClient(serv_msg * msg_buf)
     printf("%s\n", msg_buf->payload);
     /* Increment LTS */
     lamport_time->index++;
-    msg_buf->stamp.index = lamport_time->index + 1;
+    msg_buf->stamp.index = lamport_time->index;
     msg_buf->stamp.server = proc_index;
     /* Send to the client group */
     sprintf(client_group, "%s-%s", msg_buf->room, User);
@@ -476,6 +475,7 @@ void merge()
         }
         current = current->next;
     }
+}
 
 void handle_input(int argc, char * argv[]) {
     if(argc < 1) {
@@ -560,25 +560,6 @@ void send_room(char * client_group, char * rm) {
         }
         curr_user = curr_user->next;
     }
-}
-
-void sendFakeMsg()
-{
-    serv_msg * send_msg = malloc(sizeof(serv_msg));
-    if(send_msg == 0)
-    {
-        perror("MALLOC DID NOT WORK :(\n");
-        exit(1);
-    }
-    send_msg->type = 2;
-    lamport_time->index++;
-    send_msg->stamp.index = lamport_time->index;
-    send_msg->stamp.server = proc_index;
-    sprintf(send_msg->username, "FakeUser\0");
-    sprintf(send_msg->room, "FakeRoom\0");
-    sprintf(send_msg->payload, "Message %d from Server%d\0", lamport_time->index, proc_index);
-    ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) send_msg);
-    checkError("Multicast");
 }
 
 void checkError(char * action) {
