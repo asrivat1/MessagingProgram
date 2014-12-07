@@ -76,6 +76,7 @@ int main(int argc, char *argv[])
     printf("v to view which chat servers are connected\n");
     printf("q to quit \n");
     printf(">");
+    fflush(0);
 
     /* Set up E - DO NOT MOVE */
 	E_init();
@@ -120,6 +121,7 @@ void Read_input()
             for(i = 0; i < sizeof(username); i++)
                 username[i] = 0;
             sprintf(username, "%s", command + 2);
+            username[ strlen(username) - 1] = '\0';
             printf("Logged in as %s. \n", username);
             break;
         /* Connect to server */
@@ -171,14 +173,17 @@ void Read_input()
             sprintf(r_name, "%s", command + 2);
             m_room = room_init(r_name);
             sprintf(chatroom, "%s", command + 2);
-            sprintf(server_room_group, "%s-Server%d", command + 2, proc_index);
+            chatroom[ strlen(chatroom) - 1] = '\0';
+            printf("CHATROOM: %s\n", chatroom);
+            sprintf(server_room_group, "%s-Server%d", chatroom, proc_index);
+            printf("SERVER ROOM GROUP: %s\n", server_room_group);
             ret = SP_join(Mbox, server_room_group);
             sprintf(msg_send->username, "%s", username);
             sprintf(msg_send->room, "%s", chatroom);
             msg_send->type = JOIN;
             ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_send);
             in_room = 1;
-            print_room(m_room, 1);
+            /*print_room(m_room, 1);*/
             break;
         /* Append message */
         case 'a':
@@ -247,6 +252,7 @@ void Read_input()
             break;
     }
     printf(">");
+    fflush(0);
 }
 
 void Read_message()
@@ -260,6 +266,7 @@ void Read_message()
     int16 mess_type;
     membership_info memb_info;
     change_mem c_m;
+    serv_msg * temp;
 
     /* Receive messages */
     ret = SP_receive( Mbox, &service_type, sender, MAX_MEMBERS, &num_groups, target_groups,
@@ -273,31 +280,41 @@ void Read_message()
         /* If about my room */
         if(in_room != 0 && !strcmp(target_groups[0], server_room_group))
         {
+            printf("Pertinent MSG\n");
+            printf("SERVER: %d, IDEX: %d\n", msg_rec->stamp.server, msg_rec->stamp.index);
+            printf("%d \n", msg_rec->type);
             /* Handle message */
             if(msg_rec->type == MSG) {
+                temp = malloc(sizeof(serv_msg));
+                memcpy(temp, msg_rec, sizeof(serv_msg)); 
                 if(room_insert_msg(m_room, msg_rec)) {
+                    printf("NEW RECENT MSG\n");
                     printf("\n");
                     print_room(m_room, 1);
-                    printf("\n>");
                 }
+                else
+                    printf("OLD MSG, DONT DISPLAY \n");
             }
-            if(msg_rec->type == LIKE || msg_rec->type == UNLIKE) {
+            else if(msg_rec->type == LIKE || msg_rec->type == UNLIKE) {
+                temp = malloc(sizeof(serv_msg));
+                memcpy(temp, msg_rec, sizeof(serv_msg)); 
                 c_m = room_insert_like(m_room, msg_rec);
                 if(c_m.change){
                     printf("\n");
                     print_room(m_room, 1);
-                    printf("\n>");
                 }
                 if(c_m.msg != NULL) {
                     free(c_m.msg);
                 }
             }
-            if(msg_rec->type == JOIN || msg_rec->type == LEAVE) {
+            else if(msg_rec->type == JOIN || msg_rec->type == LEAVE) {
                 room_update_user(m_room, msg_rec);
                 printf("\n");
                 print_room(m_room, 1);
-                printf("\n>");
             }
+            printf("\n");
+            printf(">");
+            fflush(0);
         }
     }
 }
