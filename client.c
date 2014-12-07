@@ -252,6 +252,11 @@ void Read_input()
             printf("We haven't implemented this yet \n");
             break;
         case 'q':
+            /*Send Leave msg */
+            sprintf(msg_send->username, "%s", username);
+            sprintf(msg_send->room, "%s", chatroom);
+            msg_send->type = LEAVE;
+            ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_send);
             if(m_room)
                 del_room(m_room); 
             free(msg_send); 
@@ -304,6 +309,8 @@ void Read_message()
         }
         else if(msg_rec->type == LIKE || msg_rec->type == UNLIKE) {
             printf("Got a like\n");
+            lts * lampstamp = (lts *) msg_rec->payload;
+            printf("LS, server: %d, index %d \n", lampstamp->server, lampstamp->index); 
             temp = malloc(sizeof(serv_msg));
             memcpy(temp, msg_rec, sizeof(serv_msg)); 
             c_m = room_insert_like(m_room, temp);
