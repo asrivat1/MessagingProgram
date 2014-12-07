@@ -153,6 +153,15 @@ void Read_message()
             return;
         }
 
+        /* Send message to client */
+        if(msg_buf->type != 4)
+        {
+            printf("%s\n", msg_buf->payload);
+            sprintf(client_group, "%s-%s", msg_buf->room, User);
+            ret = SP_multicast(Mbox, SAFE_MESS, client_group, 2, sizeof(serv_msg), (char *) msg_buf);
+            checkError("Multicast");
+        }
+
         /* If from another server */
         if(!strcmp(target_groups[0], server_group))
         {
@@ -163,7 +172,6 @@ void Read_message()
             if((msg_buf->type != 4) && (abs(msg_buf->type) != 1)
                     && ltscomp(msg_buf->stamp, lamp_array(messages)[atoi(&sender[7])]) == 1)
             {
-                printf("Handling a like or text message\n");
                 /* Allocate new memory for storage */
                 msg_rec = malloc(sizeof(serv_msg));
                 if(msg_rec == 0)
@@ -191,10 +199,6 @@ void Read_message()
                 /* Add to list of messages and handle */
                 lamp_struct_insert(messages, msg_rec);
 
-                /* Send message to client */
-                sprintf(client_group, "%s-%s", msg_rec->room, User);
-                ret = SP_multicast(Mbox, SAFE_MESS, client_group, 2, sizeof(serv_msg), (char *) msg_rec);
-                checkError("Multicast");
             }
 
             /* Handle join/leave messages */
@@ -202,14 +206,13 @@ void Read_message()
             {
                 /* Join */
                 case 1:
-                    printf("New user %s\n", msg_buf->username);
+                    printf("\nNew user %s\n", msg_buf->username);
                     /* Upon first joining a room, we must send the history */
                     user_join(users[atoi(&sender[7])], msg_buf);
-                    send_room(sender, msg_buf->room);
                     break;
                 /* Leave */
                 case -1:
-                    printf("User %s has left\n", msg_buf->username);
+                    printf("\nUser %s has left\n", msg_buf->username);
                     user_leave(users[atoi(&sender[7])], msg_buf);
                     break;
                 /* Merge */
@@ -262,24 +265,20 @@ void Read_message()
                         merge_messages();
                     }
                     break;
-                /* Otherwise */
-                default:
-                    /* Insert into chatroom */
-                    break;
             }
         }
         /* Otherwise it's from client */
         else
         {
-            /* Send message to other servers */
-            lamport_time->index++;
-            msg_buf->stamp.index = lamport_time->index + 1;
-            msg_buf->stamp.server = proc_index;
-
             /* Write to file */
             fwrite(msg_buf, sizeof(serv_msg), 1, fd);
             fclose(fd);
             fd = fopen(User, "a");
+
+            /* Send message to other servers */
+            lamport_time->index++;
+            msg_buf->stamp.index = lamport_time->index + 1;
+            msg_buf->stamp.server = proc_index;
 
             /* Add to list of messages and handle */
             msg_rec = malloc(sizeof(serv_msg));
@@ -289,8 +288,18 @@ void Read_message()
                 exit(1);
             }
             memcpy(msg_rec, msg_buf, sizeof(serv_msg));
-            lamp_struct_insert(messages, msg_rec);
             room_list_update(rooms, msg_rec);
+
+            /* If it's a join, send all info */
+            if(msg_buf->type == 1)
+            {
+                send_room(sender, msg_buf->room);
+            }
+            /* Otherwise hold onto it */
+            else
+            {
+                lamp_struct_insert(messages, msg_rec);
+            }
 
             ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_buf);
             checkError("Multicast");
@@ -373,7 +382,6 @@ void merge_messages()
         }
     }
     
-    sendFakeMsg();
     free(msg_send);
     msg_send = 0;
 }
@@ -401,12 +409,7 @@ void merge()
 
     /* Send my LTS for each server */
     server_lts = lamp_array(messages);
-    char * ptr = (char *) server_lts;
-    for(i = 0; i < sizeof(lts) * NUM_SERVERS; i++)
-    {
-        if (i >= 80) printf("Went too far: %d\n", i);
-        msg_send->payload[i] = ptr[i];
-    }
+    memcpy(server_lts, msg_send->payload, sizeof(lts) * NUM_SERVERS);
     msg_send->type = 4;
     ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_send);
     checkError("Multicast");
@@ -511,6 +514,7 @@ void send_room(char * client_group, char * rm) {
             ret = SP_multicast(Mbox, SAFE_MESS, client_group, 2, sizeof(serv_msg), (char *) send_msg);
             checkError("Multicast");
         }
+        curr_user = curr_user->next;
     }
 }
 
