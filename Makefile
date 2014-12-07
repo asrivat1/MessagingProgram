@@ -25,5 +25,5 @@ test_room: test_room.o like_list.o server_include.o room.o user_list.o
 	$(CC) $(CFLAGS) -o test_room test_room.o like_list.o server_include.o room.o user_list.o
 
 clean:
-	rm -f *.o sp_user class_user server client test_lamp_struct test_like_list
+	rm -f *.o sp_user class_user server client test_lamp_struct test_like_list test_room
 

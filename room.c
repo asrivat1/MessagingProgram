@@ -9,7 +9,7 @@ change_mem room_insert_like(room *r, serv_msg * msg);
 void print_room(room * r, int recent);
 void room_update_user(room * r, serv_msg * msg);
 void del_room(room * r);
-
+lts get_lts(room * r, int line_num);
 
 room * room_init(char * name) {
     room * r = malloc(sizeof(room));
@@ -194,4 +194,18 @@ void del_room(room * r) {
     if(r->name != NULL)
         free(r->name);
     free(r);
+}
+
+lts get_lts(room * r, int line_num) {
+    text * curr = r->recent->next;
+    int i = 0;
+    while(curr != NULL) {
+        if(++i == line_num)
+            return curr->msg->stamp;
+        curr = curr->next;
+    }
+    lts fake;
+    fake.server = -1;
+    fake.index = -1;
+    return  fake;
 }
