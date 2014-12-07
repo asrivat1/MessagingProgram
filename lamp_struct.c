@@ -1,4 +1,5 @@
 #include "lamp_struct.h"
+#include <stdio.h>
 
 
 lamp_struct * lamp_struct_init();
@@ -23,6 +24,12 @@ lts * lamp_array(lamp_struct * ls){
     for(i = 0; i < 5; i++) {
         arr[i].index = stack_look(ls->s_list[i]);
         arr[i].server = i;
+    }
+    for(i = 0; i < 5; i++) {
+        if(arr[i].server < 0) {
+            perror("MADNESS \n");
+            exit(1);
+        }
     }
     return arr;
 }
