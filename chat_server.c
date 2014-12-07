@@ -229,7 +229,7 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
                             max[i]->index = payload_lts[i].index;
                             max_sender[i] = atoi(&sender[7]);
                         }
-                        else if(min[i] == 0 || ltscomp(payload_lts[i], *min[i]) == -1)
+                        if(min[i] == 0 || ltscomp(payload_lts[i], *min[i]) == -1)
                         {
                             if(min[i] == 0)
                             {
@@ -336,7 +336,7 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
             for(i = 0; i < NUM_SERVERS; i++)
             {
                 /* If a client left */
-                if(prev_group_status[i] > group_status[i])
+                if(i != proc_index && prev_group_status[i] > group_status[i])
                 {
                     clear_server(i);
                 }
@@ -344,14 +344,13 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
             if (merge_case)
             {
                 /* Deal with it */
-                printf("\nMerging!\n");
+                printf("\nMerging! there are %d groups\n", num_groups);
                 num_merged = num_groups;
                 merge();
             }
         }
     }
 }
-/* FIXME: Don't need to allocate memory twice */
 void storeMessage(serv_msg * msg_buf)
 {
     /* Allocate new memory for storage */
@@ -440,8 +439,14 @@ void merge_messages()
             /* Send everything from min to max */
             for(j = 0; j < messages->s_list[i]->size; j++)
             {
-                if(min[i] != 0 && (ltscomp(messages->s_list[i]->arr[j]->stamp, *min[i]) == 0
-                        || ltscomp(messages->s_list[i]->arr[j]->stamp, *min[i]) == 1))
+                if(min[i] != 0 && messages->s_list[i]->arr[j]->stamp.index >= min[i]->index)
+                {
+                    memcpy(msg_send, messages->s_list[i]->arr[j], sizeof(serv_msg));
+                    printf("Sending %s\n", msg_send->payload);
+                    ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_send);
+                    checkError("Multicast");
+                }
+                else if(min[i] == 0)
                 {
                     memcpy(msg_send, messages->s_list[i]->arr[j], sizeof(serv_msg));
                     printf("Sending %s\n", msg_send->payload);
@@ -488,6 +493,7 @@ void merge()
     user * current = users[proc_index]->next;
     while(current != 0)
     {
+        printf("Sending my user %s\n", msg_send->username);
         msg_send->type = 1;
         sprintf(msg_send->username, "%s", current->username);
         sprintf(msg_send->room, "%s", current->room);

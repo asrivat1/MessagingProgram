@@ -363,7 +363,7 @@ void Read_message()
                 sprintf(msg_send->room, "%s", chatroom);
                 msg_send->type = LEAVE;
                 ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_send);
-                printf("The server died \n")
+                printf("The server died \n");
                 /*Delete room data structure */
                 printf("Logged out. \n");
                 del_room(m_room);
