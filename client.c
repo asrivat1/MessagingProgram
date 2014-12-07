@@ -20,7 +20,7 @@ lts like_lts;
 char chatroom[30];
 char server_group[7];
 char server_room_group[80];
-char * User;
+char User[80];
 char spread_name[] = "10210";
 int ret;
 FILE *fd;
@@ -49,8 +49,8 @@ void checkError(char * action);
 int main(int argc, char *argv[])
 {
     /* Allocate memory and handle input */
-    msg_send = malloc(sizeof(serv_msg));
-    msg_rec = malloc(sizeof(serv_msg));
+    msg_send = calloc(1, sizeof(serv_msg));
+    msg_rec = calloc(1, sizeof(serv_msg));
 
     messages = lamp_struct_init();
     
@@ -109,7 +109,7 @@ void Read_input()
                 sprintf(msg_send->username, "%s", username);
                 sprintf(msg_send->room, "%s", chatroom);
                 msg_send->type = LEAVE;
-                ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_rec);
+                ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_send);
  
                 /*Delete room data structure */
                 printf("Logged out. \n");
@@ -124,14 +124,14 @@ void Read_input()
             break;
         /* Connect to server */
         case 'c':
-            if(con_server != 1) {
+            if(con_server) {
                 printf("Logging out from old server\n");
                 if(in_room) {
                     /*Send Leave msg */
                     sprintf(msg_send->username, "%s", username);
                     sprintf(msg_send->room, "%s", chatroom);
                     msg_send->type = LEAVE;
-                    ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_rec);
+                    ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_send);
  
                     /*Delete room data structure */
                     del_room(m_room);
@@ -149,7 +149,11 @@ void Read_input()
             break;
         /* Connect to room */
         case 'j':
-            if(username[0] != 0) {
+            if(!con_server) {
+                printf("Not in server. \n");
+                break;
+            }
+            if(username[0] == 0) {
                 printf("No Username. \n");
                 break;
             }
@@ -158,7 +162,7 @@ void Read_input()
                 sprintf(msg_send->username, "%s", username);
                 sprintf(msg_send->room, "%s", chatroom);
                 msg_send->type = LEAVE;
-                ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_rec);
+                ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_send);
  
                 /*Delete room data Structure */
                 del_room(m_room);
@@ -172,9 +176,10 @@ void Read_input()
             sprintf(msg_send->username, "%s", username);
             sprintf(msg_send->room, "%s", chatroom);
             msg_send->type = JOIN;
-            ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_rec);
- 
+            ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_send);
             in_room = 1;
+            print_room(m_room, 1);
+            break;
         /* Append message */
         case 'a':
             if(!in_room) {
@@ -185,7 +190,7 @@ void Read_input()
             sprintf(msg_send->room, "%s", chatroom);
             sprintf(msg_send->payload, "%s", command + 2);
             msg_send->type = MSG;
-            ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_rec);
+            ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_send);
             break;
         /* Like a message */
         case 'l':
@@ -199,7 +204,7 @@ void Read_input()
                 sprintf(msg_send->username, "%s", username);
                 sprintf(msg_send->room, "%s", chatroom);
                 msg_send->type = LIKE;
-                ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_rec);
+                ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_send);
 
             }
             else {
@@ -218,7 +223,7 @@ void Read_input()
                 sprintf(msg_send->username, "%s", username);
                 sprintf(msg_send->room, "%s", chatroom);
                 msg_send->type = UNLIKE;
-                ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_rec);
+                ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_send);
             }
             break;
         /* View full history */
@@ -234,9 +239,11 @@ void Read_input()
         case 'v':
             break;
         case 'q':
-            del_room(m_room); 
+            if(m_room)
+                del_room(m_room); 
             free(msg_send); 
             free(msg_rec);
+            exit(0);
             break;
     }
     printf(">");
