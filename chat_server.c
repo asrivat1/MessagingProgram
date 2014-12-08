@@ -338,6 +338,7 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
                 /* If a client left */
                 if(i != proc_index && prev_group_status[i] > group_status[i])
                 {
+                    printf("Clearing server %d\n", proc_index);
                     clear_server(i);
                 }
             }
@@ -490,6 +491,7 @@ void merge()
     checkError("Multicast");
 
     /* Send out my users */
+    printf("Sending my users\n");
     user * current = users[proc_index]->next;
     while(current != 0)
     {
