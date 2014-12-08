@@ -344,7 +344,8 @@ void Read_message()
                 printf("The server died \n");
                 /*Delete room data structure */
                 printf("Logged out. \n");
-                del_room(m_room);
+                if(in_room)
+                    del_room(m_room);
                 m_room = NULL;
                 in_room = 0;
                 SP_leave(Mbox, server_room_group);
