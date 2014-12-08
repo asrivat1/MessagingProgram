@@ -545,6 +545,7 @@ void clear_server(int server)
     user * current = users[server]->next;
     while(current != 0)
     {
+        printf("Removing user %s\n", current->username);
         user * tmp = current;
         strcpy(send_msg->username, tmp->username);
         strcpy(send_msg->room, tmp->room);
