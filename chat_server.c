@@ -199,6 +199,12 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
                     printf("\nNew user %s\n", msg_buf->username);
                     /* Upon first joining a room, we must send the history */
                     user_join(users[atoi(&sender[7])], msg_buf);
+                    user * current = users[proc_index]->next;
+                    while(current != 0)
+                    {
+                        printf("I have user %s\n", current->username);
+                        current = current->next;
+                    }
                     break;
                 /* Leave */
                 case -1:
@@ -292,7 +298,12 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
             /* If it's a join, send all info */
             if(msg_buf->type == 1)
             {
+                user_join(users[proc_index], msg_buf);
                 send_room(sender, msg_buf->room);
+            }
+            else if(msg_buf->type == -1)
+            {
+                user_leave(proc_index, msg_buf);
             }
 
             if(msg_buf->type != 5)
@@ -338,6 +349,12 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
                 /* If a server left */
                 if(i != proc_index && prev_group_status[i] > group_status[i])
                 {
+                    user * current = users[proc_index]->next;
+                    while(current != 0)
+                    {
+                        printf("I have user %s\n", current->username);
+                        current = current->next;
+                    }
                     printf("Clearing server %d\n", proc_index);
                     clear_server(i);
                 }
@@ -495,12 +512,6 @@ void merge()
     {
         if(i != proc_index)
         {
-            user * current = users[i]->next;
-            while(current != 0)
-            {
-                printf("Server %d has %s\n", i, current->username);
-                current = current->next;
-            }
             clear_server(i);
         }
     }
@@ -510,7 +521,7 @@ void merge()
     user * current = users[proc_index]->next;
     while(current != 0)
     {
-        printf("Sending my user %s\n", msg_send->username);
+        printf("Sending my user %s\n", current->username);
         msg_send->type = 1;
         sprintf(msg_send->username, "%s", current->username);
         sprintf(msg_send->room, "%s", current->room);
