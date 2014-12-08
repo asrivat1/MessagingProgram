@@ -335,7 +335,7 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
             }
             for(i = 0; i < NUM_SERVERS; i++)
             {
-                /* If a client left */
+                /* If a server left */
                 if(i != proc_index && prev_group_status[i] > group_status[i])
                 {
                     printf("Clearing server %d\n", proc_index);
@@ -490,6 +490,15 @@ void merge()
     ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_send);
     checkError("Multicast");
 
+    /* Clear my list of users for everyone else */
+    for(i = 0; i < NUM_SERVERS; i++)
+    {
+        if(i != proc_index)
+        {
+            clear_server(i);
+        }
+    }
+
     /* Send out my users */
     printf("Sending my users\n");
     user * current = users[proc_index]->next;
@@ -537,7 +546,6 @@ void clear_server(int server)
     while(current != 0)
     {
         user * tmp = current;
-        current = current->next;
         strcpy(send_msg->username, tmp->username);
         strcpy(send_msg->room, tmp->room);
 
@@ -545,13 +553,14 @@ void clear_server(int server)
         {
             sprintf(client_group, "%s-%s", tmp->room, User);
             ret = SP_multicast(Mbox, SAFE_MESS, client_group, 2, sizeof(serv_msg), (char *) send_msg);
-            ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) send_msg);
             room_list_update(rooms, send_msg);
             checkError("Multicast");
         }
 
         free(tmp);
         tmp = 0;
+
+        current = current->next;
     }
 }
 /* send room to client */
