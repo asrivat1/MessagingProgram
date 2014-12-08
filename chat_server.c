@@ -495,6 +495,12 @@ void merge()
     {
         if(i != proc_index)
         {
+            user * current = users[i]->next;
+            while(current != 0)
+            {
+                printf("Server %d has %s\n", i, current->username);
+                current = current->next;
+            }
             clear_server(i);
         }
     }
@@ -563,6 +569,8 @@ void clear_server(int server)
         free(tmp);
         tmp = 0;
     }
+
+    users[server]->next = 0;
 }
 /* send room to client */
 void send_room(char * client_group, char * rm) {
