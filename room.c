@@ -65,10 +65,9 @@ int room_insert_msg(room * r, serv_msg * msg){
         /*If the msg type is DUMMY, then add msg, note change
           if in most recent*/
         if(ctext->next->msg->type == DUMMY) {
-            r->size ++;
             if(pass) {
                 change = 1;
-                if(r->size > 25) {
+                if(r->size >= 25) {
                     r->recent = r->recent->next;
                 }
             }
@@ -93,10 +92,11 @@ int room_insert_msg(room * r, serv_msg * msg){
         ntext->msg = msg;
         if(pass) {
             change = 1;
-            if(r->size > 25)
+            if(r->size >= 25)
                 r->recent = r->recent->next;
         }
     }
+    r->size ++;
     return change;
 }
 
