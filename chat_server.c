@@ -558,10 +558,10 @@ void clear_server(int server)
             checkError("Multicast");
         }
 
+        current = current->next;
+
         free(tmp);
         tmp = 0;
-
-        current = current->next;
     }
 }
 /* send room to client */
