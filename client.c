@@ -152,6 +152,7 @@ void Read_input()
             proc_index = atoi(command + 2);
             if(proc_index < 0 || proc_index > 5) {
                 printf("Not a valid server #\n");
+                con_server = 0;
                 break;
             }
             sprintf(server_group, "Server%d", proc_index);
@@ -180,6 +181,7 @@ void Read_input()
                 del_room(m_room);
                 printf("Leaving %s. \n", chatroom);
                 SP_leave(Mbox, server_room_group);
+                in_room = 0;
             }
             if(strnlen(command + 2, 30) > 24) {
                 printf("ERROR: Room name too long. \n");
