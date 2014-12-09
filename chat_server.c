@@ -161,12 +161,11 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
 
         /* Ignore if from self unless LTS array */
         if(!strcmp(sender, Private_group) && msg_buf->type != MERGE
-            && !(msg_buf->payload[0] = 'C' && msg_buf->payload[1] = 'C'))
+            && !(msg_buf->payload[0] == 'C' && msg_buf->payload[1] == 'C'))
         {
             printf("It was from myself\n");
             return;
         }
-
 
         msg_rec = malloc(sizeof(serv_msg));
         if(!msg_rec)
@@ -179,7 +178,6 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
         /* If from another server */
         if(!strcmp(target_groups[0], server_group) || (sender[1] == 'S' && msg_buf->type != LEAVE))
         {
-            printf("In the if\n");
             /* Put it in the room */
             room_list_update(rooms, msg_rec);
 
@@ -266,7 +264,6 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
         /* Otherwise it's from client */
         else
         {
-            printf("In the else\n");
             /* Increment LTS */
             lamport_time->index++;
             msg_buf->stamp.index = lamport_time->index;
