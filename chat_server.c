@@ -166,6 +166,11 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
             printf("It was from myself\n");
             return;
         }
+        /* Make sure you don't get leave from yourself twice */
+        if(msg_buf->type == LEAVE) {
+            msg_buf->payload[0] = 0;
+            msg_buf->payload[1] = 0;
+        }
 
         msg_rec = malloc(sizeof(serv_msg));
         if(!msg_rec)
