@@ -174,7 +174,7 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
         memcpy(msg_rec, msg_buf, sizeof(serv_msg));
 
         /* If from another server */
-        if(!strcmp(target_groups[0], server_group))
+        if(!strcmp(target_groups[0], server_group) || sender[1] == 'S')
         {
             /* Put it in the room */
             room_list_update(rooms, msg_rec);
@@ -481,7 +481,7 @@ void merge_messages()
 
 void merge()
 {
-    int i;
+    int i,z;
     lts * server_lts;
     serv_msg * msg_send = malloc(sizeof(serv_msg));
     if(msg_send == 0)
@@ -507,7 +507,7 @@ void merge()
     ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_send);
     checkError("Multicast");
 
-    /* Clear my list of users for everyone else */
+    /* Clear my list of users for everyone else 
     for(i = 0; i < NUM_SERVERS; i++)
     {
         if(i != proc_index)
@@ -515,20 +515,27 @@ void merge()
             clear_server(i);
         }
     }
+    */
+
 
     /* Send out my users */
     printf("Sending my users\n");
     user * current = users[proc_index]->next;
+    char serv[7];
     while(current != 0)
     {
         printf("Sending my user %s\n", current->username);
         msg_send->type = 1;
         sprintf(msg_send->username, "%s", current->username);
         sprintf(msg_send->room, "%s", current->room);
-        for(i = 0; i < current->instances; i++)
-        {
-            ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_send);
-            checkError("Multicast");
+        for(z = 0; z < NUM_SERVERS; z++) {
+            if(prev_group_status[z] < group_status[z]) {
+                sprintf(serv, "Server%d", z);
+                for(i = 0; i < current->instances; i++) {
+                    ret = SP_multicast(Mbox, SAFE_MESS, serv, 2, sizeof(serv_msg), (char *) msg_send);
+                    checkError("Multicast");
+                }
+            }
         }
         current = current->next;
     }
