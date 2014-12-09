@@ -391,6 +391,8 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
                     }
                 }
                 if(!is_there) {
+                    strncpy(temp_msg->username, node->username, 10);
+                    strncpy(temp_msg->room, node->room, 30);
                     temp_msg->type = LEAVE;
                     ret = SP_multicast(Mbox, SAFE_MESS, User, 2, sizeof(serv_msg), (char *) temp_msg);
                 }
