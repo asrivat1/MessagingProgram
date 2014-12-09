@@ -392,6 +392,7 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
                     strncpy(temp_msg->room, node->room, 30);
                     temp_msg->type = LEAVE;
                     ret = SP_multicast(Mbox, SAFE_MESS, User, 2, sizeof(serv_msg), (char *) temp_msg);
+                    cmap_del(cmap, node->pname);
                 }
                 node = node->next;
             }
