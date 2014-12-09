@@ -507,17 +507,6 @@ void merge()
     ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_send);
     checkError("Multicast");
 
-    /* Clear my list of users for everyone else 
-    for(i = 0; i < NUM_SERVERS; i++)
-    {
-        if(i != proc_index)
-        {
-            clear_server(i);
-        }
-    }
-    */
-
-
     /* Send out my users */
     printf("Sending my users\n");
     user * current = users[proc_index]->next;
