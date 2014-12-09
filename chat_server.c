@@ -160,7 +160,8 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
         printf("\nGot a regular message sent to %s of type %d\n", target_groups[0], msg_buf->type);
 
         /* Ignore if from self unless LTS array */
-        if(!strcmp(sender, Private_group) && msg_buf->type != MERGE)
+        if(!strcmp(sender, Private_group) && msg_buf->type != MERGE
+            && !(msg_buf->payload[0] = 'C' && msg_buf->payload[1] = 'C'))
         {
             printf("It was from myself\n");
             return;
@@ -378,6 +379,8 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
         else {
             serv_msg * temp_msg = calloc(1, sizeof(serv_msg));
             cmap_node * node = cmap->next;
+            temp_msg->payload[0] = 'C';
+            temp_msg->payload[1] = 'C';
             while(node) {
                 int z;
                 short is_there = 0;
