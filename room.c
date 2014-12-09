@@ -174,7 +174,7 @@ void print_room(room * r, int recent) {
             temp = temp->next;
             continue;
         }
-        printf("%2d. %s: %-80s \t Likes: %d\n", ++i, temp->msg->username, 
+        printf("%2d. %-10s: %-80s Likes: %d\n", ++i, temp->msg->username, 
                temp->msg->payload, temp->likes->num_likes);
         temp = temp->next;
     }
