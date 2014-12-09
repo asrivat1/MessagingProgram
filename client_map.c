@@ -52,7 +52,9 @@ void cmap_del(cmap_node * cn, char * pname) {
             temp = curr->next;
             curr->next = temp->next;
             free(temp); 
+            return;
         }
+        curr = curr->next;
     }
 }
 
@@ -63,6 +65,7 @@ cmap_node * cmap_get(cmap_node * cn, char * pname) {
         if(!strcmp(curr->next->pname, pname)){
             return curr;
         }
+        curr = curr->next;
     }
     return NULL;
 }

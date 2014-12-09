@@ -178,6 +178,7 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
         /* If from another server */
         if(!strcmp(target_groups[0], server_group) || (sender[1] == 'S' && msg_buf->type != LEAVE))
         {
+            printf("In the if\n");
             /* Put it in the room */
             room_list_update(rooms, msg_rec);
 
@@ -264,6 +265,7 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
         /* Otherwise it's from client */
         else
         {
+            printf("In the else\n");
             /* Increment LTS */
             lamport_time->index++;
             msg_buf->stamp.index = lamport_time->index;
@@ -312,6 +314,7 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
 
             if(msg_buf->type != VIEW)
             {
+                printf("Sending to servers\n");
                 ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_buf);
                 checkError("Multicast");
             }
@@ -319,6 +322,7 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
         /* Send message to client unless it's an LTS array */
         if(msg_buf->type != MERGE && msg_buf->type != VIEW)
         {
+            printf("Sending to clients\n");
             sendToClient(msg_buf);
         }
     }
@@ -379,12 +383,15 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
                 short is_there = 0;
                 for(z = 0; z < num_groups; z++) {
                     if(!strncmp(target_groups[z], node->pname, MAX_PRIVATE_NAME))
+                    {
                         is_there = 1;
+                    }
                 }
                 if(!is_there) {
-                    ret = SP_multicast(Mbox, SAFE_MESS, server_client, 2, sizeof(serv_msg), (char *) temp_msg);
+                    temp_msg->type = LEAVE;
+                    ret = SP_multicast(Mbox, SAFE_MESS, User, 2, sizeof(serv_msg), (char *) temp_msg);
                 }
-                
+                node = node->next;
             }
             free(temp_msg);
         }
