@@ -118,7 +118,11 @@ void Read_input()
                 m_room = NULL;
                 in_room = 0;
                 SP_leave(Mbox, server_room_group);
-            } 
+            }
+            if(strnlen(command + 2, 13) > 12) {
+                printf("ERROR: username too long. \n");
+                break;
+            }
             for(i = 0; i < sizeof(username); i++)
                 username[i] = 0;
             sprintf(username, "%s", command + 2);
@@ -146,6 +150,10 @@ void Read_input()
                 SP_leave(Mbox, server_client);
             }
             proc_index = atoi(command + 2);
+            if(proc_index < 0 || proc_index > 5) {
+                printf("Not a valid server #\n");
+                break;
+            }
             sprintf(server_group, "Server%d", proc_index);
             sprintf(server_client, "Server%d-Client", proc_index);
             ret = SP_join(Mbox, server_client);
@@ -172,6 +180,10 @@ void Read_input()
                 del_room(m_room);
                 printf("Leaving %s. \n", chatroom);
                 SP_leave(Mbox, server_room_group);
+            }
+            if(strnlen(command + 2, 30) > 24) {
+                printf("ERROR: Room name too long. \n");
+                break;
             }
             sprintf(r_name, "%s", command + 2);
             m_room = room_init(r_name);
