@@ -31,7 +31,7 @@ double time;
 serv_msg * msg_send;
 serv_msg * msg_rec;
 struct timeval val;
-char username[12];
+char username[10];
 int in_room = 0;
 int con_server = 0;
 room * m_room;
@@ -119,7 +119,7 @@ void Read_input()
                 in_room = 0;
                 SP_leave(Mbox, server_room_group);
             }
-            if(strnlen(command + 2, 13) > 12) {
+            if(strnlen(command + 2, 11) > 10) {
                 printf("ERROR: username too long. \n");
                 break;
             }
@@ -210,6 +210,7 @@ void Read_input()
             sprintf(msg_send->username, "%s", username);
             sprintf(msg_send->room, "%s", chatroom);
             sprintf(msg_send->payload, "%s", command + 2);
+            msg_send->payload[ strnlen(msg_send->payload, 80) - 1] = '\0';
             msg_send->type = MSG;
             ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_send);
             break;
