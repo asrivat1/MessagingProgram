@@ -8,6 +8,7 @@
 #include "server_include.h"
 #include "user_list.h"
 #include "room_list.h"
+#include "client_map.h"
 
 #define MAX_MEMBERS  100
 #define MAX_MESSLEN  102400
@@ -31,10 +32,10 @@ int max_sender[NUM_SERVERS];
 lts * min[NUM_SERVERS];
 int num_merged = 0;
 int num_lts = 0;
-
+cmap_node * cmap;
 int group_status[NUM_SERVERS];
 int prev_group_status[NUM_SERVERS];
-
+char server_client[MAX_GROUP_NAME];
 void handle_input(int argc, char *argv[]);
 void Read_message();
 void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEMBERS][MAX_GROUP_NAME],
@@ -87,6 +88,8 @@ int main(int argc, char *argv[])
 
     rooms = room_list_init();
 
+    cmap = cmap_init();
+
     /* Set up LTS data structure */
     lamport_time = malloc(sizeof(lts));
     if(lamport_time == 0)
@@ -133,7 +136,6 @@ int main(int argc, char *argv[])
     checkError("Join");
     ret = SP_join(Mbox, User);
     checkError("Join");
-    char server_client[MAX_GROUP_NAME];
     sprintf(server_client, "Server%d-Client", proc_index);
     ret = SP_join(Mbox, server_client);
     checkError("Join");
@@ -174,7 +176,7 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
         memcpy(msg_rec, msg_buf, sizeof(serv_msg));
 
         /* If from another server */
-        if(!strcmp(target_groups[0], server_group) || sender[1] == 'S')
+        if(!strcmp(target_groups[0], server_group) || (sender[1] == 'S' && msg_buf->type != LEAVE))
         {
             /* Put it in the room */
             room_list_update(rooms, msg_rec);
@@ -300,10 +302,12 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
             {
                 user_join(users[proc_index], msg_buf);
                 send_room(sender, msg_buf->room);
+                cmap_update(cmap, msg_buf, sender);
             }
             else if(msg_buf->type == -1)
             {
                 user_leave(users[proc_index], msg_buf);
+                cmap_del(cmap, sender);
             }
 
             if(msg_buf->type != 5)
@@ -366,6 +370,23 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
                 num_merged = num_groups;
                 merge();
             }
+        }
+        else {
+            serv_msg * temp_msg = calloc(1, sizeof(serv_msg));
+            cmap_node * node = cmap->next;
+            while(node) {
+                int z;
+                short is_there = 0;
+                for(z = 0; z < num_groups; z++) {
+                    if(!strncmp(target_groups[z], node->pname, MAX_PRIVATE_NAME))
+                        is_there = 1;
+                }
+                if(!is_there) {
+                    ret = SP_multicast(Mbox, SAFE_MESS, server_client, 2, sizeof(serv_msg), (char *) temp_msg);
+                }
+                
+            }
+            free(temp_msg);
         }
     }
 }
