@@ -158,7 +158,7 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
         printf("\nGot a regular message sent to %s of type %d\n", target_groups[0], msg_buf->type);
 
         /* Ignore if from self unless LTS array */
-        if(!strcmp(sender, Private_group) && msg_buf->type != 4)
+        if(!strcmp(sender, Private_group) && msg_buf->type != MERGE)
         {
             printf("It was from myself\n");
             return;
@@ -180,7 +180,7 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
             room_list_update(rooms, msg_rec);
 
             /* If it's not a server only message and we don't already have it */
-            if((msg_buf->type != 4) && msg_buf->type != 1 && msg_buf->type != -1
+            if((msg_buf->type != MERGE) && msg_buf->type != 1 && msg_buf->type != LEAVE
                     && ltscomp(msg_buf->stamp, lamp_array(messages)[atoi(&sender[7])]) == 1)
             {
                 storeMessage(msg_buf);
@@ -195,7 +195,7 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
             switch(msg_buf->type)
             {
                 /* Join */
-                case 1:
+                case JOIN:
                     printf("\nNew user %s\n", msg_buf->username);
                     /* Upon first joining a room, we must send the history */
                     user_join(users[atoi(&sender[7])], msg_buf);
@@ -207,12 +207,12 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
                     }
                     break;
                 /* Leave */
-                case -1:
+                case LEAVE:
                     printf("\nUser %s has left\n", msg_buf->username);
                     user_leave(users[atoi(&sender[7])], msg_buf);
                     break;
                 /* Merge */
-                case 4:
+                case MERGE:
                     num_lts++;
                     /* Retreive the array of LTS */
                     memcpy(payload_lts, msg_buf->payload, sizeof(lts) * 5);
@@ -269,7 +269,7 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
             msg_rec->stamp.index = lamport_time->index;
             msg_rec->stamp.server = proc_index;
 
-            if(msg_buf->type != 1 && msg_buf->type != -1 && msg_buf->type != 5)
+            if(msg_buf->type != JOIN && msg_buf->type != LEAVE && msg_buf->type != VIEW)
             {
                 /* Write to file */
                 fd = fopen(User, "a");
@@ -278,7 +278,7 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
                 lamp_struct_insert(messages, msg_rec);
             }
 
-            if(msg_buf->type != 5)
+            if(msg_buf->type != VIEW)
             {
                 room_list_update(rooms, msg_rec);
             }
@@ -296,24 +296,24 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
             }
 
             /* If it's a join, send all info */
-            if(msg_buf->type == 1)
+            if(msg_buf->type == JOIN)
             {
                 user_join(users[proc_index], msg_buf);
                 send_room(sender, msg_buf->room);
             }
-            else if(msg_buf->type == -1)
+            else if(msg_buf->type == LEAVE)
             {
                 user_leave(users[proc_index], msg_buf);
             }
 
-            if(msg_buf->type != 5)
+            if(msg_buf->type != VIEW)
             {
                 ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_buf);
                 checkError("Multicast");
             }
         }
         /* Send message to client unless it's an LTS array */
-        if(msg_buf->type != 4 && msg_buf->type != 5)
+        if(msg_buf->type != MERGE && msg_buf->type != VIEW)
         {
             sendToClient(msg_buf);
         }
@@ -503,7 +503,7 @@ void merge()
     /* Send my LTS for each server */
     server_lts = lamp_array(messages);
     memcpy(msg_send->payload, server_lts, sizeof(lts) * 5);
-    msg_send->type = 4;
+    msg_send->type = MERGE;
     ret = SP_multicast(Mbox, SAFE_MESS, server_group, 2, sizeof(serv_msg), (char *) msg_send);
     checkError("Multicast");
 
@@ -514,7 +514,7 @@ void merge()
     while(current != 0)
     {
         printf("Sending my user %s\n", current->username);
-        msg_send->type = 1;
+        msg_send->type = JOIN;
         sprintf(msg_send->username, "%s", current->username);
         sprintf(msg_send->room, "%s", current->room);
         for(z = 0; z < NUM_SERVERS; z++) {
@@ -553,7 +553,7 @@ void clear_server(int server)
         exit(1);
     }
 
-    send_msg->type = -1;
+    send_msg->type = LEAVE;
 
     user * current = users[server]->next;
     while(current != 0)
@@ -589,7 +589,7 @@ void send_room(char * client_group, char * rm) {
         perror("MALLOC DID NOT WORK :(\n");
         exit(1);
     }
-    send_msg->type = 1;
+    send_msg->type = JOIN;
     room * r = room_list_get_room(rooms, rm);
     text * t = r->t_head->next;
     l_node * l;

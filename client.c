@@ -319,7 +319,6 @@ void Read_message()
             room_insert_msg(m_room, temp);
         }
         else if(msg_rec->type == LIKE || msg_rec->type == UNLIKE) {
-            lts * lampstamp = (lts *) msg_rec->payload;
             temp = malloc(sizeof(serv_msg));
             memcpy(temp, msg_rec, sizeof(serv_msg)); 
             c_m = room_insert_like(m_room, temp);

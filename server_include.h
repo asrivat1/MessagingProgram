@@ -9,6 +9,7 @@
 #define UNLIKE -3
 #define LEAVE -1
 #define DUMMY 0
+#define MERGE 4
 #define VIEW 5
 
 /*Lamport time stamp */
