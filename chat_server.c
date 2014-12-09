@@ -303,7 +303,7 @@ void handleMessage(serv_msg * msg_buf, char * sender, char target_groups[MAX_MEM
             }
             else if(msg_buf->type == -1)
             {
-                user_leave(proc_index, msg_buf);
+                user_leave(users[proc_index], msg_buf);
             }
 
             if(msg_buf->type != 5)
